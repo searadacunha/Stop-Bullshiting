@@ -23,6 +23,8 @@
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Offline first](https://img.shields.io/badge/network-not_required-149e85)
 
+[Installation](#install) · [Agent integrations](#connect-to-claude-code-and-codex) · [Examples](#real-workflows) · [Limitations](#safety-privacy-and-limitations)
+
 </div>
 
 ## Why it exists
@@ -48,37 +50,40 @@ This project does **not** increase subscription usage limits or create extra tok
 
 ## Install
 
-Python 3.10+; no runtime Python dependencies. On macOS or Linux:
+**Python 3.10+** is required. The runtime has no third-party Python dependencies. Installation does **not** activate any agent hooks; integrations are opt-in.
+
+### macOS (recommended: isolated CLI with pipx)
+
+You can install directly from this GitHub repository, without a ZIP file or manual copy of the source:
 
 ```bash
-# Clone after the repository has been published, or use an extracted release archive.
-cd Stop-Bullshiting
-python3 -m pip install --user .
+brew install pipx
+pipx ensurepath
+pipx install 'git+https://github.com/searadacunha/Stop-Bullshiting.git'
 
-sbs banner
+# Make the CLI available in this terminal session as well:
+export PATH="$HOME/.local/bin:$PATH"
 sbs doctor
 sbs bench
 ```
 
-If your Python is externally managed (common with Homebrew), use [pipx](https://pipx.pypa.io/):
+If your terminal still reports `command not found: sbs`, open a new terminal and run `pipx list` to check whether the package was installed. `sbs` and `stop-bullshiting` are equivalent commands.
+
+### macOS / Linux (clone and virtual environment)
 
 ```bash
-pipx install .
+git clone https://github.com/searadacunha/Stop-Bullshiting.git
+cd Stop-Bullshiting
+python3 -m venv .venv
+.venv/bin/python -m pip install -e .
+
+.venv/bin/sbs doctor
+.venv/bin/sbs bench
 ```
 
-A virtual environment also works. The `sbs` and `stop-bullshiting` commands are identical.
+This second method keeps the executable inside `.venv/bin/`. To run `sbs` without its path, activate the virtual environment with `source .venv/bin/activate` first. Prefer `pipx` if you want the command available globally in your shell.
 
-## Publish the source on GitHub
-
-The repository contains a one-command publishing script for the authenticated GitHub CLI:
-
-```bash
-# Run from an extracted Stop-Bullshiting release folder.
-gh auth login                 # once, if not already authenticated
-bash scripts/publish_github.sh
-```
-
-The script creates `searadacunha/Stop-Bullshiting` as a **public** repository, commits only this project's source and documentation, and pushes the initial `main` branch. It never force-pushes an existing remote. You must have `gh` installed and authenticated. Set `GITHUB_OWNER` if publishing under another account.
+To connect Claude Code or Codex, continue below only after the CLI is installed and `sbs doctor` succeeds.
 
 ## Connect to Claude Code and Codex
 
