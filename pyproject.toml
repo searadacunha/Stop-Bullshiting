@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stop-bullshiting"
+version = "0.1.0"
+description = "Local-first, reversible context optimizer for terminal AI agents"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{name = "searadacunha"}]
+keywords = ["ai", "agents", "claude-code", "codex", "tokens", "compression", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+sbs = "stop_bullshiting.cli:main"
+stop-bullshiting = "stop_bullshiting.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
