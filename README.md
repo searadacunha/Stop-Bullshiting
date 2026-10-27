@@ -22,6 +22,7 @@
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Offline first](https://img.shields.io/badge/network-not_required-149e85)
+[![CI](https://github.com/searadacunha/Stop-Bullshiting/actions/workflows/ci.yml/badge.svg)](https://github.com/searadacunha/Stop-Bullshiting/actions/workflows/ci.yml)
 
 [Installation](#install) · [Agent integrations](#connect-to-claude-code-and-codex) · [Examples](#real-workflows) · [Limitations](#safety-privacy-and-limitations)
 
@@ -32,6 +33,8 @@
 Coding agents read huge logs, repetitive terminal output, massive JSON objects, code they never needed, and the same project notes again and again. That can waste context window space. **Stop-Bullshiting** replaces long outputs with bounded, inspectable previews, keeps originals available on disk, and makes focused retrieval easy.
 
 This project does **not** increase subscription usage limits or create extra tokens. A smaller output does not guarantee a cheaper session or an equally accurate result. It does not promise a fixed percentage of savings. You can benchmark characters locally and inspect token counters recorded by agents.
+
+**Fast path:** install with `pipx install 'git+https://github.com/searadacunha/Stop-Bullshiting.git'`, then run `sbs doctor` and `sbs bench`. Integrations are opt-in and can be removed without uninstalling the CLI.
 
 ## Features
 
@@ -213,7 +216,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/INTEGRATIONS.md](docs/IN
 - Truncation is **not semantically lossless**. The receipt guarantees access to the original, not identical model decisions. Errors are prioritized but can still be omitted under very small budgets.
 - Invalid/corrupt configs are rejected rather than overwritten. Existing files are backed up; each installer can be reversed.
 - `sbs run` captures stdout for bounded postprocessing. Use `sbs run --raw -- <command>` for interactive commands or anything needing streaming stdout.
-- Automatic hooks cover only clearly recognized command patterns. They are not a generalized proxy for every tool call or MCP message.
+- Automatic hooks cover only clearly recognized command patterns. They are not a generalized proxy for every tool call or MCP message. The Codex wrapper rejects executable paths (even ones named `git`, `ls`, or `rg`) and Git options capable of writing files or invoking external text converters.
 - The default local benchmark is synthetic and does not establish response-quality equivalence.
 
 ## Development
