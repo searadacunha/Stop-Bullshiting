@@ -7,6 +7,7 @@ import json
 import os
 import shlex
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -60,11 +61,19 @@ def _execute(argv: list[str], *, no_store: bool, raw: bool, mode: str, max_len: 
                     # Do not corrupt non-UTF-8 terminal output. No receipt is created.
                     sys.stdout.buffer.write(raw_bytes)
                 else:
-                    reduced = compress(text, mode=mode, max_len=max_len,
-                                       source="run:" + " ".join(argv[:3]), store=not no_store)
-                    sys.stdout.write(reduced.text)
-                    if reduced.receipt:
-                        _print_stats(reduced.original_chars, reduced.visible_chars)
+                    try:
+                        reduced = compress(text, mode=mode, max_len=max_len,
+                                           source="run:" + " ".join(argv[:3]), store=not no_store)
+                    except (OSError, sqlite3.Error, ValueError):
+                        # The command has already run. A storage/configuration error
+                        # must never discard its output or replace its exit status.
+                        print("[SBS] Reduction unavailable: preserving original output",
+                              file=sys.stderr)
+                        sys.stdout.buffer.write(raw_bytes)
+                    else:
+                        sys.stdout.write(reduced.text)
+                        if reduced.receipt:
+                            _print_stats(reduced.original_chars, reduced.visible_chars)
         sys.stdout.flush()
         shutil.copyfileobj(err, sys.stderr.buffer)
         sys.stderr.flush()
@@ -213,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(message)
             if not args.remove and args.target in ("shell", "all"):
                 print("Open a new zsh terminal for the claude/codex launch banners.")
+            if not args.remove and args.target in ("codex", "all"):
+                print("In Codex, open /hooks to review and trust the installed hook before it can run.")
         elif args.cmd == "map":
             for line in symbol_map(Path(args.path), name_filter=args.name, limit=args.limit):
                 print(line)
@@ -270,7 +281,7 @@ def main(argv: list[str] | None = None) -> int:
             for path in (Path.home()/".claude"/"settings.json", Path.home()/".codex"/"hooks.json"):
                 print(str(path), "present" if path.exists() else "absent")
         return 0
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
+    except (OSError, sqlite3.Error, ValueError, json.JSONDecodeError) as exc:
         print(f"[SBS] {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
     except KeyboardInterrupt:

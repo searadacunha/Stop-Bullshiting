@@ -71,7 +71,9 @@ def symbol_map(root: Path, *, name_filter: str = "", limit: int = 160) -> list[s
 
 
 def search(query: str, root: Path, *, limit: int = 50) -> list[str]:
-    """Fixed-string search; never interpolate user input into a shell command."""
+    """Case-sensitive literal search; never interpolate input into a shell command."""
+    if limit < 1:
+        raise ValueError("Search limit must be at least 1")
     root = root.expanduser().resolve()
     rg = shutil.which("rg")
     if rg:
@@ -90,7 +92,7 @@ def search(query: str, root: Path, *, limit: int = 50) -> list[str]:
                 continue
             with file.open(encoding="utf-8", errors="replace") as source:
                 for number, line in enumerate(source, 1):
-                    if query.casefold() in line.casefold():
+                    if query in line:
                         results.append(f"{file}:{number}:{line.rstrip()[:300]}")
                         if len(results) >= limit:
                             return results

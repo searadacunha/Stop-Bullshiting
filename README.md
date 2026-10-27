@@ -2,28 +2,16 @@
 
 # STOP-BULLSHITING
 
-**Less noise. More signal. Your machine. Your control.**
+**Smaller terminal output. Inspectable previews. Recoverable originals.**
 
-*An open-source, local-first context reduction toolkit for coding agents.*
+*A dependency-free Python CLI for reducing the context coding agents read.*
 
-```text
-  ███████╗████████╗ ██████╗ ██████╗
-  ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
-  ███████╗   ██║   ██║   ██║██████╔╝
-  ╚════██║   ██║   ██║   ██║██╔═══╝
-  ███████║   ██║   ╚██████╔╝██║
-  ╚══════╝   ╚═╝    ╚═════╝ ╚═╝
-
-  B U L L S H I T I N G
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  LESS NOISE   •   MORE SIGNAL   •   LOCAL FIRST
-```
-
+[![CI](https://github.com/searadacunha/Stop-Bullshiting/actions/workflows/ci.yml/badge.svg)](https://github.com/searadacunha/Stop-Bullshiting/actions/workflows/ci.yml)
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Offline first](https://img.shields.io/badge/network-not_required-149e85)
 
-[Installation](#install) · [Agent integrations](#connect-to-claude-code-and-codex) · [Examples](#real-workflows) · [Limitations](#safety-privacy-and-limitations)
+[Install](#install) · [Command guide](#command-guide) · [Integrations](#connect-to-claude-code-and-codex) · [Troubleshooting](#troubleshooting) · [Limits](#safety-privacy-and-limitations)
 
 </div>
 
@@ -31,7 +19,13 @@
 
 Coding agents read huge logs, repetitive terminal output, massive JSON objects, code they never needed, and the same project notes again and again. That can waste context window space. **Stop-Bullshiting** replaces long outputs with bounded, inspectable previews, keeps originals available on disk, and makes focused retrieval easy.
 
-This project does **not** increase subscription usage limits or create extra tokens. A smaller output does not guarantee a cheaper session or an equally accurate result. It does not promise a fixed percentage of savings. You can benchmark characters locally and inspect token counters recorded by agents.
+```bash
+sbs run -- git log --oneline -1000      # Compact a command's successful stdout
+sbs show <receipt-id>                  # Read its full original again
+sbs bench                             # Measure a local synthetic example
+```
+
+**It does not increase Claude/Codex quotas, create extra tokens or guarantee lower bills.** It measures character reduction; actual usage depends on the agent, model, caching and subsequent requests. Use the CLI directly to inspect its behavior before enabling automatic integrations.
 
 ## Features
 
@@ -39,8 +33,7 @@ This project does **not** increase subscription usage limits or create extra tok
 |:--|:--|
 | **Output reduction** | Detects JSON, logs, diffs, code, CSV and generic text; keeps important errors and structural context |
 | **Reversible receipts** | Saves full original locally, recoverable using `sbs show <id>` |
-| **Claude Code hook** | Optional `PostToolUse` reduction of supported Bash stdout; unrelated tools untouched |
-| **Codex hook** | Optional `PreToolUse` wrapping of a narrow allowlist of read-only terminal commands |
+| **Agent hook adapters** | Opt-in Claude `PostToolUse` and Codex `PreToolUse` adapters; compatibility depends on the installed client |
 | **Local MCP server** | Exposes search, AST symbols, exact lines, reversible compression and notes over stdio |
 | **Symbol navigation** | Precise Python AST class/function locations, targeted excerpts |
 | **Persistent notes** | Per-project local SQLite notes, never sent to an external indexing service |
@@ -85,6 +78,24 @@ This second method keeps the executable inside `.venv/bin/`. To run `sbs` withou
 
 To connect Claude Code or Codex, continue below only after the CLI is installed and `sbs doctor` succeeds.
 
+To update a pipx installation later:
+
+```bash
+pipx upgrade stop-bullshiting
+```
+
+## Command guide
+
+| Need | Command | Result |
+|:--|:--|:--|
+| Reduce a command's output | `sbs run -- git log --oneline -1000` | Preview and local restoration ID when reduction is useful |
+| Recover an original | `sbs show <receipt-id>` | Complete stored text |
+| Find Python definitions | `sbs map src --name compress` | AST function/class names and line ranges |
+| Find a literal string | `sbs search "save_receipt" src` | Case-sensitive matching lines |
+| Read exact lines | `sbs read src/stop_bullshiting/compress.py 1 30` | Numbered source excerpt |
+| Compare reduction | `sbs bench --file sample.log` | Character counts, without storing a receipt |
+| Inspect recorded usage | `sbs usage all --json` | Available provider token counters, not attributed savings |
+
 ## Connect to Claude Code and Codex
 
 ```bash
@@ -99,7 +110,11 @@ sbs setup shell
 sbs setup all
 ```
 
-Open a **new terminal** after `sbs setup shell`. Your original CLI binaries still run. The hook integrations must already be supported by your installed versions of Claude Code and Codex. No authentication configuration is touched.
+Open a **new terminal** after `sbs setup shell`. The launcher remembers the Python interpreter that installed it, so a virtual-environment installation does not require `sbs` on the new shell's `PATH`. Keep that environment in place; rerun setup if you move or reinstall it. Your original agent binaries still run.
+
+**Compatibility:** hook schemas are version-dependent. This repository tests event handling and configuration round trips with local fixtures; that does not establish end-to-end support in every Claude Code or Codex release. `sbs doctor` reports executable paths and configuration presence, not active output replacement. Use `sbs run` explicitly if your client does not support the adapter. Installing the shell logo alone does not reduce agent output.
+
+After `sbs setup codex`, open **`/hooks` inside Codex** to review and trust the new or changed hook; configuration alone does not activate it. See the [integration reference and upstream documentation](docs/INTEGRATIONS.md#documented-contracts).
 
 To uninstall all integrations without uninstalling the package:
 
@@ -107,7 +122,7 @@ To uninstall all integrations without uninstalling the package:
 sbs setup all --remove
 ```
 
-Existing hook configurations are merged, not overwritten; every changed file is backed up. `~/.zshrc` is used only if you explicitly enable the shell launcher.
+Existing hook configurations are merged, including preservation of third-party entries within a shared hook group; preexisting changed files are backed up. `~/.zshrc` is used only if you explicitly enable the shell launcher. Authentication settings are not changed.
 
 **Important:** Claude Code can rewrite a tool result after execution. Codex currently takes a different route: only narrowly allowlisted *read-only* commands are wrapped before execution. These are not interchangeable features. Both integrations deliberately fail open when an output cannot be handled safely.
 
@@ -149,7 +164,7 @@ sbs search "create_signature" .
 sbs read src/my_module.py 88 135
 ```
 
-Python symbols use the actual syntax tree and report accurate start/end line numbers. Search uses `rg` if available, with a safe Python fallback. Searches are bounded; they do not automatically read entire repositories.
+Python symbols use the syntax tree and report start/end line numbers. Search uses `rg` if available, with a Python fallback; both use case-sensitive literal matching. The fallback scans supported source/document extensions and skips large files and common build directories. Their file coverage can therefore differ.
 
 ### Keep compact project notes
 
@@ -193,18 +208,27 @@ MCP tools: `sbs_compact`, `sbs_restore`, `sbs_symbols`, `sbs_search`, `sbs_read`
 
 ## Architecture
 
-```text
- Claude Code ──[optional PostToolUse]───┐
-                                       │
- Codex ──[optional read-only wrapper]──┼──> SBS Core
-                                       │      │
- Terminal / Scripts ──[sbs run]────────┤      ├── JSON / logs / diff / text views
-                                       │      ├── exact source range / AST map
- MCP clients ──[stdio JSON-RPC]────────┘      ├── local project memory
-                                              └── private SQLite originals + metrics
+```mermaid
+flowchart TD
+    Input["CLI, stdio MCP or compatible hook"] --> Core["SBS core"]
+    Core --> Preview["Short preview"]
+    Core --> Source["Source search and exact excerpts"]
+    Core --> Store["Local SQLite: originals and notes"]
+    Preview --> Restore["Restore by receipt ID"]
+    Store --> Restore
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) and [docs/SECURITY.md](docs/SECURITY.md).
+
+## Troubleshooting
+
+| Symptom | Check or action |
+|:--|:--|
+| `sbs: command not found` | Confirm installation with `pipx list`, then open a new terminal after `pipx ensurepath`; for a clone, use `.venv/bin/sbs`. |
+| The logo appears but output stays large | The shell launcher only displays the banner. Try `sbs run` and check adapter compatibility before configuring hooks. |
+| Small output stays unchanged | Expected: reduction occurs only when thresholds and the minimum useful gain are met. |
+| A command reports `Reduction unavailable` | Its original stdout, stderr and exit status are preserved. Check available storage and `sbs doctor`; `--no-store` bypasses receipt storage. |
+| A moved environment breaks a launch function | Reinstall the package and rerun `sbs setup shell`, or remove its marked block from `.zshrc`. |
 
 ## Safety, privacy and limitations
 
@@ -213,6 +237,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/INTEGRATIONS.md](docs/IN
 - Truncation is **not semantically lossless**. The receipt guarantees access to the original, not identical model decisions. Errors are prioritized but can still be omitted under very small budgets.
 - Invalid/corrupt configs are rejected rather than overwritten. Existing files are backed up; each installer can be reversed.
 - `sbs run` captures stdout for bounded postprocessing. Use `sbs run --raw -- <command>` for interactive commands or anything needing streaming stdout.
+- If receipt storage or reduction configuration fails after a command succeeds, `sbs run` emits the original output and keeps the command's exit status.
 - Automatic hooks cover only clearly recognized command patterns. They are not a generalized proxy for every tool call or MCP message.
 - The default local benchmark is synthetic and does not establish response-quality equivalence.
 
