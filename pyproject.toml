@@ -9,7 +9,7 @@ description = "Local-first, reversible context optimizer for terminal AI agents"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-authors = [{name = "searadacunha"}]
+authors = [{name = "Benjamin Da Cunha"}]
 keywords = ["ai", "agents", "claude-code", "codex", "tokens", "compression", "cli"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -17,6 +17,10 @@ classifiers = [
     "Environment :: Console",
     "Operating System :: OS Independent",
 ]
+
+[project.urls]
+Repository = "https://github.com/searadacunha/Stop-Bullshiting"
+Issues = "https://github.com/searadacunha/Stop-Bullshiting/issues"
 
 [project.scripts]
 sbs = "stop_bullshiting.cli:main"
