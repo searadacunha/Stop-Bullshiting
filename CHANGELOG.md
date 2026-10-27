@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add a macOS installer/repair script for the reviewed 0.2.0 release, without requiring pipx, Git or a source checkout.
+- Persist the CLI path with a backup, refresh only existing SBS integrations and run the built-in reference-token benchmark.
+- Clarify copyable installation examples, optional dependencies, receipt IDs and common terminal errors.
+
 ## 0.2.0 — 2026-10-27
 
 - Retrieve exact receipt line ranges or literal matches with context from CLI and MCP.

@@ -20,10 +20,11 @@
 Coding agents read huge logs, repetitive terminal output, massive JSON objects, code they never needed, and the same project notes again and again. That can waste context window space. **Stop-Bullshiting** replaces long outputs with bounded, inspectable previews, keeps originals available on disk, and makes focused retrieval easy.
 
 ```bash
-sbs run -- git log --oneline -1000      # Compact a command's successful stdout
-sbs show <receipt-id>                  # Read its full original again
-sbs bench                             # Measure a local synthetic example
+sbs run -- git log --oneline -1000
+sbs bench
 ```
+
+Run the first command inside a Git repository. When output is reduced, copy the restoration command printed by SBS to read the full original again. `sbs bench` uses a built-in synthetic sample and needs no file.
 
 **It does not increase Claude/Codex quotas, create extra tokens or guarantee lower bills.** It measures character reduction and optionally counts text with a named reference tokenizer; actual usage depends on the agent, model, caching and subsequent requests. Use the CLI directly to inspect its behavior before enabling automatic integrations.
 
@@ -43,24 +44,53 @@ sbs bench                             # Measure a local synthetic example
 
 ## Install
 
-**Python 3.10+** is required. The core runtime has no third-party Python dependencies. Reference-token counting is an optional extra. Installation does **not** activate any agent hooks; integrations are opt-in.
+**Python 3.10+** is required. The core runtime has no third-party Python dependencies. Reference-token counting is an optional extra, included by the macOS installer below. Installation does **not** activate new agent hooks; integrations are opt-in.
 
-### macOS (recommended: isolated CLI with pipx)
+### macOS (recommended: installer without pipx)
 
-You can install directly from this GitHub repository, without a ZIP file or manual copy of the source:
+Run this from **any directory**. It downloads the [installer](scripts/install_macos.sh) to a temporary file and runs it only if the download succeeds:
+
+```bash
+(
+  set -e
+  sbs_installer="$(mktemp "${TMPDIR:-/tmp}/sbs-install.XXXXXX")"
+  trap 'rm -f "$sbs_installer"' EXIT
+  curl -fsSL https://raw.githubusercontent.com/searadacunha/Stop-Bullshiting/main/scripts/install_macos.sh -o "$sbs_installer"
+  bash "$sbs_installer"
+)
+```
+
+The installer installs or repairs **version 0.2.0**, pinned to commit `b5d6681`, with the optional token counter in `~/.local/share/stop-bullshiting/venv`. No clone, Homebrew, `pipx` or `sudo` is needed. It adds the executable directory to your zsh `PATH`, backs up an existing shell configuration before changing it, and refreshes only SBS integrations you already enabled. It finishes by printing the version and running a benchmark with the built-in sample. Its first tokenizer use may download a public vocabulary table; benchmark text is not uploaded.
+
+Then open a **new terminal** before using `sbs`, Claude Code or Codex. If an existing Codex hook was refreshed, review it with `/hooks` inside Codex. Check the installation with:
+
+```bash
+sbs --version
+sbs bench --tokenizer o200k_base
+```
+
+To update an older installation to 0.2.0 or repair this installation, rerun the same installer commands and open a new terminal. This installer is pinned to 0.2.0; it does not promise a future latest version. `sbs` and `stop-bullshiting` are equivalent commands.
+
+### macOS (alternative: pipx)
+
+If you prefer `pipx` and have Homebrew, you can install directly from this GitHub repository. The `export` line makes the CLI available in the current terminal as well:
 
 ```bash
 brew install pipx
 pipx ensurepath
 pipx install 'git+https://github.com/searadacunha/Stop-Bullshiting.git'
-
-# Make the CLI available in this terminal session as well:
 export PATH="$HOME/.local/bin:$PATH"
 sbs doctor
 sbs bench
 ```
 
-If your terminal still reports `command not found: sbs`, open a new terminal and run `pipx list` to check whether the package was installed. `sbs` and `stop-bullshiting` are equivalent commands.
+If your terminal still reports `command not found: sbs`, open a new terminal and run `pipx list` to check whether the package was installed.
+
+To update a pipx installation later:
+
+```bash
+pipx upgrade stop-bullshiting
+```
 
 ### macOS / Linux (clone and virtual environment)
 
@@ -74,41 +104,42 @@ python3 -m venv .venv
 .venv/bin/sbs bench
 ```
 
-This second method keeps the executable inside `.venv/bin/`. To run `sbs` without its path, activate the virtual environment with `source .venv/bin/activate` first. Prefer `pipx` if you want the command available globally in your shell.
+Run the editable installation command only from the cloned `Stop-Bullshiting` directory containing `pyproject.toml`. This method keeps the executable inside `.venv/bin/`. To run `sbs` without its path, activate the virtual environment with `source .venv/bin/activate` first.
 
 To connect Claude Code or Codex, continue below only after the CLI is installed and `sbs doctor` succeeds.
-
-To update a pipx installation later:
-
-```bash
-pipx upgrade stop-bullshiting
-```
 
 ## Command guide
 
 | Need | Command | Result |
 |:--|:--|:--|
 | Reduce a command's output | `sbs run -- git log --oneline -1000` | Preview and local restoration ID when reduction is useful |
-| Recover an original | `sbs show <receipt-id>` | Complete stored text |
-| Recover selected lines | `sbs show <receipt-id> --start 120 --end 145` | Exact numbered lines from the original |
-| Find inside an original | `sbs show <receipt-id> --find "E_BALANCE" --context 3` | Literal matches and neighboring lines |
+| Recover an original | Copy the `sbs show …` command printed in the preview | Complete stored text |
+| Recover selected lines | Append `--start 120 --end 145` to that restoration command | Exact numbered lines from the original |
+| Find inside an original | Append `--find "E_BALANCE" --context 3` to that restoration command | Literal matches and neighboring lines |
 | Find Python definitions | `sbs map src --name compress` | AST function/class names and line ranges |
 | Find a literal string | `sbs search "save_receipt" src` | Case-sensitive matching lines |
 | Read exact lines | `sbs read src/stop_bullshiting/compress.py 1 30` | Numbered source excerpt |
-| Compare reduction | `sbs bench --file sample.log` | Character counts, without storing a receipt |
+| Compare reduction | `sbs bench` | Character counts for the built-in sample, without storing a receipt |
 | Inspect recorded usage | `sbs usage all --json` | Available provider token counters, not attributed savings |
 
 ## Connect to Claude Code and Codex
 
+Optional hook configuration is local, reversible and backed up:
+
 ```bash
-# Optional hook configuration: local, reversible, with backups.
 sbs setup claude
 sbs setup codex
+```
 
-# Optional zsh launch functions: makes "claude" and "codex" show the logo.
+Optional zsh launch functions make `claude` and `codex` show the logo:
+
+```bash
 sbs setup shell
+```
 
-# Or configure all three at once (explicit opt-in):
+Alternatively, enable all three at once:
+
+```bash
 sbs setup all
 ```
 
@@ -124,7 +155,7 @@ To uninstall all integrations without uninstalling the package:
 sbs setup all --remove
 ```
 
-Existing hook configurations are merged, including preservation of third-party entries within a shared hook group; preexisting changed files are backed up. `~/.zshrc` is used only if you explicitly enable the shell launcher. Authentication settings are not changed.
+Existing hook configurations are merged, including preservation of third-party entries within a shared hook group; preexisting changed files are backed up. The shell launcher updates `.zshrc` when explicitly enabled; the macOS installer also uses it for the `PATH` entry. Authentication settings are not changed.
 
 **Important:** Claude Code can rewrite a tool result after execution. Codex currently takes a different route: only narrowly allowlisted *read-only* commands are wrapped before execution. These are not interchangeable features. Both integrations deliberately fail open when an output cannot be handled safely.
 
@@ -132,38 +163,31 @@ Existing hook configurations are merged, including preservation of third-party e
 
 ### Reduce terminal or pipeline output
 
+Run these examples from a project checkout. Original exit status is preserved; stderr and failing-command output are not compacted.
+
 ```bash
-# Original exit status is preserved; stderr and failing-command output are not compacted.
 sbs run -- git log --oneline -1000
 sbs run -- rg "TODO" .
 sbs run -- python3 -m unittest discover -s tests
+```
 
-# Or explicitly pipe any text:
+Or explicitly pipe text (`run.log` must be an existing log file):
+
+```bash
 git log --oneline -1000 | sbs compress --mode plain --stats
 cat run.log | sbs compress --mode logs --max-chars 2400
 ```
 
-If a result is reduced, it includes an ID:
+If a result is reduced, it includes a restoration command with a real receipt ID. This is an illustrative output format; `RECEIPT_ID` is not an ID to paste:
 
 ```text
 ... [193 lines omitted] ...
-[SBS logs: 18602 → 2110 chars; full original: sbs show a1b2c3d4e5f601]
+[SBS logs: 18602 → 2110 chars; full original: sbs show RECEIPT_ID]
 ```
 
-Recover everything without loss:
+Recover everything without loss by copying the complete `sbs show …` command from **your own SBS output**. To recover only what the next step needs, append `--find "request-0055" --context 3` to that command, or append `--start 120 --end 145` for a line range. Use a search string or line range that applies to your output.
 
-```bash
-sbs show a1b2c3d4e5f601
-```
-
-Recover only what the next step needs:
-
-```bash
-sbs show a1b2c3d4e5f601 --find "request-0055" --context 3
-sbs show a1b2c3d4e5f601 --start 120 --end 145
-```
-
-Ranges are 1-based and inclusive. `--find` is case-sensitive and literal, and can be restricted with `--start` / `--end`. Selected views consider at most 50 source lines by default (`--limit` changes this) and fit within 20,000 characters including metadata. Matching lines take priority over context within the line limit. Omitted lines are reported explicitly; oversized lines are never silently shortened. Use `--context 0` for a tighter search response. Plain `sbs show <id>` still returns the complete original without a cap.
+Ranges are 1-based and inclusive. `--find` is case-sensitive and literal, and can be restricted with `--start` / `--end`. Selected views consider at most 50 source lines by default (`--limit` changes this) and fit within 20,000 characters including metadata. Matching lines take priority over context within the line limit. Omitted lines are reported explicitly; oversized lines are never silently shortened. Use `--context 0` for a tighter search response. `sbs show` followed by the real receipt ID, without selectors, still returns the complete original without a cap.
 
 You can disable local storage using `sbs compress --no-store` or `sbs run --no-store -- command`.
 
@@ -175,10 +199,12 @@ Python traceback blocks pass through unchanged in auto, logs and plain modes. Re
 
 ### Search code without dumping whole files
 
+From the root of a Stop-Bullshiting clone:
+
 ```bash
-sbs map . --name validate_transaction
-sbs search "create_signature" .
-sbs read src/my_module.py 88 135
+sbs map src --name compress
+sbs search "save_receipt" src
+sbs read src/stop_bullshiting/compress.py 1 30
 ```
 
 Python symbols use the syntax tree and report start/end line numbers. Search uses `rg` if available, with a Python fallback; both use case-sensitive literal matching. The fallback scans supported source/document extensions and skips large files and common build directories. Their file coverage can therefore differ.
@@ -197,23 +223,33 @@ Notes are scoped to the current working directory unless `--scope` is specified.
 ### Analyze consumption
 
 ```bash
-sbs stats             # Observed reduction in characters in SBS receipts
-sbs usage claude      # Real counters if locally recorded by Claude Code
-sbs usage codex       # Real counters if locally recorded by Codex
+sbs stats
+sbs usage claude
+sbs usage codex
 sbs usage all --json
-sbs bench --file sample.log --mode logs
+sbs bench
 ```
 
 **Different metrics, different meaning:** `sbs stats` and `sbs bench` measure characters, *not* actual model token cost. `sbs usage` reads token usage records, but cannot assign causality to this tool. A reliable savings claim needs an A/B test with equivalent tasks, model, caching and context.
 
 ### Optional reference-token measurement
 
-```bash
-# From a clone:
-python3 -m pip install -e '.[tokens]'
-sbs bench --file sample.log --tokenizer o200k_base
+The macOS installer already includes the token counter. Use the built-in sample from any directory:
 
-# For a pipx installation, install the optional counter into its environment:
+```bash
+sbs bench --tokenizer o200k_base
+```
+
+For a clone installation, run this **from the cloned directory containing `pyproject.toml`**, using the virtual environment created in the installation steps:
+
+```bash
+.venv/bin/python -m pip install -e '.[tokens]'
+.venv/bin/sbs bench --tokenizer o200k_base
+```
+
+For a pipx installation, install the optional counter into its environment:
+
+```bash
 pipx inject stop-bullshiting 'tiktoken>=0.7,<1'
 ```
 
@@ -221,13 +257,16 @@ pipx inject stop-bullshiting 'tiktoken>=0.7,<1'
 
 `reference_token_counts` counts the actual preview, including its no-storage marker. `model_tokens_measured` remains `false`: the benchmark excludes wrapper diagnostics, tool envelopes, later recovery calls and provider billing. The built-in sample is highly repetitive and does not represent a whole coding session.
 
-The multi-fixture benchmark also checks sentinel preservation, exact restoration, unchanged short output and local compression latency:
+The multi-fixture benchmark also checks sentinel preservation, exact restoration, unchanged short output and local compression latency. Run it from the root of a clone:
 
 ```bash
 python3 scripts/benchmark_compression.py
 python3 scripts/benchmark_compression.py --tokenizer o200k_base
-python3 scripts/benchmark_compression.py --tokenizer o200k_base --baseline /path/to/older/checkout
-# Inspect deliberately lossy modes separately:
+```
+
+For a comparison, append `--baseline` followed by the actual path to an older source checkout. To inspect deliberately lossy modes separately:
+
+```bash
 python3 scripts/benchmark_compression.py --explicit-modes
 ```
 
@@ -270,7 +309,12 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/INTEGRATIONS.md](docs/IN
 
 | Symptom | Check or action |
 |:--|:--|
-| `sbs: command not found` | Confirm installation with `pipx list`, then open a new terminal after `pipx ensurepath`; for a clone, use `.venv/bin/sbs`. |
+| `sbs: command not found` | After the macOS installer, open a new terminal; its executable is `~/.local/share/stop-bullshiting/venv/bin/sbs`. For pipx, check `pipx list` and run `pipx ensurepath`; for a clone, use `.venv/bin/sbs`. |
+| `pipx: command not found` | Use the macOS installer above; it does not need pipx. Install pipx with Homebrew only if you choose the alternative method. |
+| `unrecognized arguments: --tokenizer` | Check `sbs --version` and `command -v sbs`: an older installation may be selected. Rerun the macOS installer to install or repair 0.2.0, then open a new terminal. |
+| `zsh: command not found: #` | Interactive zsh may treat pasted comments as commands. Copy only the command blocks; the explanations are outside them. |
+| A shell parse error or an unknown receipt ID | Do not paste angle-bracket placeholders or illustrative IDs. Copy the complete restoration command printed by your own SBS output. |
+| Editable installation reports that `.` is not installable | Run it from the root of the cloned repository containing `pyproject.toml`. The macOS installer works from any directory and needs no clone. |
 | The logo appears but output stays large | The shell launcher only displays the banner. Try `sbs run` and check adapter compatibility before configuring hooks. |
 | Small output stays unchanged | Expected: reduction occurs only when thresholds and the minimum useful gain are met. |
 | A command reports `Reduction unavailable` | Its original stdout, stderr and exit status are preserved. Check available storage and `sbs doctor`; `--no-store` bypasses receipt storage. |
@@ -289,10 +333,12 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/INTEGRATIONS.md](docs/IN
 
 ## Development
 
+From the root of a cloned repository containing `pyproject.toml`, with the virtual environment created in the installation steps:
+
 ```bash
-python3 -m pip install -e .
-python3 -m unittest discover -s tests -v
-python3 -m stop_bullshiting doctor
+.venv/bin/python -m pip install -e .
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m stop_bullshiting doctor
 ```
 
 Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
