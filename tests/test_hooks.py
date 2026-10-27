@@ -27,7 +27,9 @@ class HookTests(unittest.TestCase):
             self.assertTrue(safe_read_command(cmd), cmd)
         for cmd in ("rm -rf .", "git push", "pytest -q", "git diff; rm -rf .",
                     "rg file | sh", "git status $(touch /tmp/evil)", "ls > file",
-                    "git -c alias.x=status x", "rg --pre=curl foo"):
+                    "git -c alias.x=status x", "rg --pre=curl foo",
+                    "/tmp/ls -la", "./rg TODO .", "/opt/tools/git status",
+                    "git diff --textconv", "git show --output=/tmp/result"):
             self.assertFalse(safe_read_command(cmd), cmd)
 
     def test_claude_replacement_only_safe_big_stdout(self):
