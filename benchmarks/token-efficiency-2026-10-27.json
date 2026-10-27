@@ -1,0 +1,1070 @@
+{
+  "schema_version": 1,
+  "kind": "summary_of_sbs_synthetic_benchmarks",
+  "measured_on": "2026-10-27",
+  "fixture_set": "synthetic-v1",
+  "python": "3.12.14",
+  "candidate_version": "0.2.0",
+  "sources": {
+    "baseline": {
+      "commit": "ae5fcf481284e109d1ac1d92cd56b5292636a628",
+      "dirty": false
+    },
+    "candidate": {
+      "commit": "ae5fcf481284e109d1ac1d92cd56b5292636a628",
+      "dirty": true
+    }
+  },
+  "candidate_source_sha256": {
+    "src/stop_bullshiting/compress.py": "f3c6cb1475fa22e69ef6170bfdebc791a261308c01ed0be5a6e1cf7d7382d3ae",
+    "src/stop_bullshiting/store.py": "7b500a8b814cc86bfc52d44eb9c408c3fdcaeed778fa958f6b173e320e0cc8c8",
+    "src/stop_bullshiting/config.py": "a1f356b41e1c13197453c757f4b3704ae523ebe31bda2fe0d6fbfc812572f366",
+    "scripts/benchmark_compression.py": "57b564b242a9212754f54f9a53f2eefaa04dae3d5d14a9176651297e717d1856"
+  },
+  "tokenizer": {
+    "requested": "o200k_base",
+    "available": true,
+    "encoding": "o200k_base",
+    "provider_billing_tokens": false,
+    "package_version": "0.14.0",
+    "reason": "Reference tokenizer count of text only, including the receipt marker."
+  },
+  "settings": {
+    "max_chars": 3500,
+    "min_chars": 1400,
+    "min_gain": 0.12,
+    "repeats": 3
+  },
+  "measurement": {
+    "receipt_ids": "Deterministic UUID5; genuine storage and final rendered markers are measured.",
+    "latency": "Local compress() wall time including receipt storage; excludes imports, token counting and restoration.",
+    "scope": "Synthetic microbenchmark; no agent tasks, remote model calls, billing or quota measured.",
+    "fidelity": "Sentinel presence and exact restoration do not establish semantic equivalence."
+  },
+  "notes": [
+    "Candidate was measured as uncommitted changes against the stated baseline; source hashes identify the measured compression implementation.",
+    "Source paths are normalized by recording commit identities instead of machine paths.",
+    "Visible token counts include receipt markers; later retrieval and protocol overhead are excluded.",
+    "Auto and explicit modes are separate; deliberately lossy explicit modes can omit sentinels."
+  ],
+  "cases": [
+    {
+      "name": "repetitive_logs",
+      "description": "Repeated heartbeats plus varied batches and one error",
+      "input_sha256": "93b498c1de8811d6c57b421253665d908b01e010fb5c2434fb71617fe9012b75",
+      "input_chars": 8416,
+      "input_reference_tokens": 1998,
+      "sentinels": {
+        "error": "E_SETTLEMENT_417",
+        "request": "req-b91f",
+        "signed_amount": "-125.50 EUR"
+      },
+      "auto": {
+        "baseline": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            258,
+            257,
+            261
+          ],
+          "visible_reference_tokens_median": 258,
+          "reduction_pct_from_original_median": 87.09,
+          "visible_char_samples": [
+            891,
+            891,
+            891
+          ],
+          "visible_sha256_samples": [
+            "547895b31d898eebc06f9c77d52f3c782c75df1f4365ab536f041baa604830dd",
+            "8a4dad5133f6d9aff5e62947be48ee0e5ef32142c1a1f8228db09e8ff3d10fc8",
+            "fe7cf2629aea3c773edcacd064e889570a0932523adbdfb995528b437b5ff537"
+          ],
+          "sentinels_preserved": {
+            "error": true,
+            "request": true,
+            "signed_amount": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              60.445653,
+              11.235372,
+              16.035186
+            ],
+            "median": 16.035186,
+            "min": 11.235372,
+            "max": 60.445653
+          }
+        },
+        "current": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            258,
+            257,
+            261
+          ],
+          "visible_reference_tokens_median": 258,
+          "reduction_pct_from_original_median": 87.09,
+          "visible_char_samples": [
+            891,
+            891,
+            891
+          ],
+          "visible_sha256_samples": [
+            "547895b31d898eebc06f9c77d52f3c782c75df1f4365ab536f041baa604830dd",
+            "8a4dad5133f6d9aff5e62947be48ee0e5ef32142c1a1f8228db09e8ff3d10fc8",
+            "fe7cf2629aea3c773edcacd064e889570a0932523adbdfb995528b437b5ff537"
+          ],
+          "sentinels_preserved": {
+            "error": true,
+            "request": true,
+            "signed_amount": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              187.818787,
+              3.230054,
+              2.424498
+            ],
+            "median": 3.230054,
+            "min": 2.424498,
+            "max": 187.818787
+          }
+        }
+      },
+      "explicit": {
+        "baseline": {
+          "requested_mode": "logs",
+          "visible_reference_token_samples": [
+            258,
+            257,
+            261
+          ],
+          "visible_reference_tokens_median": 258,
+          "reduction_pct_from_original_median": 87.09,
+          "visible_char_samples": [
+            891,
+            891,
+            891
+          ],
+          "visible_sha256_samples": [
+            "547895b31d898eebc06f9c77d52f3c782c75df1f4365ab536f041baa604830dd",
+            "8a4dad5133f6d9aff5e62947be48ee0e5ef32142c1a1f8228db09e8ff3d10fc8",
+            "fe7cf2629aea3c773edcacd064e889570a0932523adbdfb995528b437b5ff537"
+          ],
+          "sentinels_preserved": {
+            "error": true,
+            "request": true,
+            "signed_amount": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              11.879614,
+              3.345024,
+              3.511957
+            ],
+            "median": 3.511957,
+            "min": 3.345024,
+            "max": 11.879614
+          }
+        },
+        "current": {
+          "requested_mode": "logs",
+          "visible_reference_token_samples": [
+            258,
+            257,
+            261
+          ],
+          "visible_reference_tokens_median": 258,
+          "reduction_pct_from_original_median": 87.09,
+          "visible_char_samples": [
+            891,
+            891,
+            891
+          ],
+          "visible_sha256_samples": [
+            "547895b31d898eebc06f9c77d52f3c782c75df1f4365ab536f041baa604830dd",
+            "8a4dad5133f6d9aff5e62947be48ee0e5ef32142c1a1f8228db09e8ff3d10fc8",
+            "fe7cf2629aea3c773edcacd064e889570a0932523adbdfb995528b437b5ff537"
+          ],
+          "sentinels_preserved": {
+            "error": true,
+            "request": true,
+            "signed_amount": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              160.064239,
+              7.948803,
+              7.807327
+            ],
+            "median": 7.948803,
+            "min": 7.807327,
+            "max": 160.064239
+          }
+        }
+      }
+    },
+    {
+      "name": "json_middle_error",
+      "description": "Unique JSON records with a failing record in the middle",
+      "input_sha256": "dd222f175c0c15644733e557220536b984ce627f211e186512d31a024738c89b",
+      "input_chars": 17133,
+      "input_reference_tokens": 5515,
+      "sentinels": {
+        "error": "E_BALANCE_721",
+        "id": "tx_b4c291e78a65",
+        "exact_signed_integer": "-900719925474099312345"
+      },
+      "auto": {
+        "baseline": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            132,
+            134,
+            132
+          ],
+          "visible_reference_tokens_median": 132,
+          "reduction_pct_from_original_median": 97.61,
+          "visible_char_samples": [
+            348,
+            348,
+            348
+          ],
+          "visible_sha256_samples": [
+            "2a2e61b8d34b80593a898541ac691f7a2f5120f5168782f28fac8defaa9d7e19",
+            "17dfb06a2c24d9ff43daa183df38858e4f0b9a41b5b7f1ea4e95a5c67118cf3f",
+            "c79200f72601e75382296f01fa53cc677fade79916848826df0d0fc3711651d8"
+          ],
+          "sentinels_preserved": {
+            "error": false,
+            "id": false,
+            "exact_signed_integer": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              26.988204,
+              13.136477,
+              28.717812
+            ],
+            "median": 26.988204,
+            "min": 13.136477,
+            "max": 28.717812
+          }
+        },
+        "current": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            208,
+            210,
+            208
+          ],
+          "visible_reference_tokens_median": 208,
+          "reduction_pct_from_original_median": 96.23,
+          "visible_char_samples": [
+            578,
+            578,
+            578
+          ],
+          "visible_sha256_samples": [
+            "0981fc9a3629eb5abb39e0b1d42e4353cb7a4b46d8be0caf5bde35ecaaa59f70",
+            "b38d23d2b7bbc291a35bd45cfea1b0a5a403649a8de19a250abb6b7ab08a8e71",
+            "ff1f2ebcbc84ec4a964a2f1138f536ab06033f0077a0617e34d47dbc5e372750"
+          ],
+          "sentinels_preserved": {
+            "error": true,
+            "id": true,
+            "exact_signed_integer": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              3.472285,
+              151.71682,
+              184.985024
+            ],
+            "median": 151.71682,
+            "min": 3.472285,
+            "max": 184.985024
+          }
+        }
+      },
+      "explicit": {
+        "baseline": {
+          "requested_mode": "json",
+          "visible_reference_token_samples": [
+            132,
+            134,
+            132
+          ],
+          "visible_reference_tokens_median": 132,
+          "reduction_pct_from_original_median": 97.61,
+          "visible_char_samples": [
+            348,
+            348,
+            348
+          ],
+          "visible_sha256_samples": [
+            "2a2e61b8d34b80593a898541ac691f7a2f5120f5168782f28fac8defaa9d7e19",
+            "17dfb06a2c24d9ff43daa183df38858e4f0b9a41b5b7f1ea4e95a5c67118cf3f",
+            "c79200f72601e75382296f01fa53cc677fade79916848826df0d0fc3711651d8"
+          ],
+          "sentinels_preserved": {
+            "error": false,
+            "id": false,
+            "exact_signed_integer": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              3.083951,
+              3.060859,
+              2.94702
+            ],
+            "median": 3.060859,
+            "min": 2.94702,
+            "max": 3.083951
+          }
+        },
+        "current": {
+          "requested_mode": "json",
+          "visible_reference_token_samples": [
+            208,
+            210,
+            208
+          ],
+          "visible_reference_tokens_median": 208,
+          "reduction_pct_from_original_median": 96.23,
+          "visible_char_samples": [
+            578,
+            578,
+            578
+          ],
+          "visible_sha256_samples": [
+            "0981fc9a3629eb5abb39e0b1d42e4353cb7a4b46d8be0caf5bde35ecaaa59f70",
+            "b38d23d2b7bbc291a35bd45cfea1b0a5a403649a8de19a250abb6b7ab08a8e71",
+            "ff1f2ebcbc84ec4a964a2f1138f536ab06033f0077a0617e34d47dbc5e372750"
+          ],
+          "sentinels_preserved": {
+            "error": true,
+            "id": true,
+            "exact_signed_integer": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              3.965437,
+              2.807293,
+              4.852187
+            ],
+            "median": 3.965437,
+            "min": 2.807293,
+            "max": 4.852187
+          }
+        }
+      }
+    },
+    {
+      "name": "traceback",
+      "description": "Distinct scan logs with a traceback and a precise signed amount",
+      "input_sha256": "00badf1cc1bd0aa3017e45539fb59ccbd9b2c6fde1347999aa381a9159f1d574",
+      "input_chars": 8076,
+      "input_reference_tokens": 2380,
+      "sentinels": {
+        "error": "E_PRECISION_903",
+        "reference": "tx_41f9",
+        "amount_with_unit": "-0.00000017 BTC",
+        "function": "validate_exact_units"
+      },
+      "auto": {
+        "baseline": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            422,
+            421,
+            421
+          ],
+          "visible_reference_tokens_median": 421,
+          "reduction_pct_from_original_median": 82.31,
+          "visible_char_samples": [
+            1411,
+            1411,
+            1411
+          ],
+          "visible_sha256_samples": [
+            "21acd0ff098c49a2de36feaaadd54bf7269705fd0c0b5c26fccfe94cd1be816c",
+            "5dd713fbc52a37116dd055174c325e4ff790657776f415a908f4f4b4a1c51af6",
+            "ade440d3adcd3f4d5ec49cb1db4cc504d45e744fc8e6e9794cef7ddb4606c8d4"
+          ],
+          "sentinels_preserved": {
+            "error": false,
+            "reference": false,
+            "amount_with_unit": false,
+            "function": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              15.843034,
+              19.019541,
+              9.052795
+            ],
+            "median": 15.843034,
+            "min": 9.052795,
+            "max": 19.019541
+          }
+        },
+        "current": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            2380,
+            2380,
+            2380
+          ],
+          "visible_reference_tokens_median": 2380,
+          "reduction_pct_from_original_median": 0.0,
+          "visible_char_samples": [
+            8076,
+            8076,
+            8076
+          ],
+          "visible_sha256_samples": [
+            "00badf1cc1bd0aa3017e45539fb59ccbd9b2c6fde1347999aa381a9159f1d574",
+            "00badf1cc1bd0aa3017e45539fb59ccbd9b2c6fde1347999aa381a9159f1d574",
+            "00badf1cc1bd0aa3017e45539fb59ccbd9b2c6fde1347999aa381a9159f1d574"
+          ],
+          "sentinels_preserved": {
+            "error": true,
+            "reference": true,
+            "amount_with_unit": true,
+            "function": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "verbatim_output",
+          "unchanged_every_run": true,
+          "local_compression_ms": {
+            "samples": [
+              0.074212,
+              0.076711,
+              0.050368
+            ],
+            "median": 0.074212,
+            "min": 0.050368,
+            "max": 0.076711
+          }
+        }
+      },
+      "explicit": {
+        "baseline": {
+          "requested_mode": "logs",
+          "visible_reference_token_samples": [
+            422,
+            421,
+            421
+          ],
+          "visible_reference_tokens_median": 421,
+          "reduction_pct_from_original_median": 82.31,
+          "visible_char_samples": [
+            1411,
+            1411,
+            1411
+          ],
+          "visible_sha256_samples": [
+            "21acd0ff098c49a2de36feaaadd54bf7269705fd0c0b5c26fccfe94cd1be816c",
+            "5dd713fbc52a37116dd055174c325e4ff790657776f415a908f4f4b4a1c51af6",
+            "ade440d3adcd3f4d5ec49cb1db4cc504d45e744fc8e6e9794cef7ddb4606c8d4"
+          ],
+          "sentinels_preserved": {
+            "error": false,
+            "reference": false,
+            "amount_with_unit": false,
+            "function": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              3.298041,
+              3.092494,
+              2.195
+            ],
+            "median": 3.092494,
+            "min": 2.195,
+            "max": 3.298041
+          }
+        },
+        "current": {
+          "requested_mode": "logs",
+          "visible_reference_token_samples": [
+            2380,
+            2380,
+            2380
+          ],
+          "visible_reference_tokens_median": 2380,
+          "reduction_pct_from_original_median": 0.0,
+          "visible_char_samples": [
+            8076,
+            8076,
+            8076
+          ],
+          "visible_sha256_samples": [
+            "00badf1cc1bd0aa3017e45539fb59ccbd9b2c6fde1347999aa381a9159f1d574",
+            "00badf1cc1bd0aa3017e45539fb59ccbd9b2c6fde1347999aa381a9159f1d574",
+            "00badf1cc1bd0aa3017e45539fb59ccbd9b2c6fde1347999aa381a9159f1d574"
+          ],
+          "sentinels_preserved": {
+            "error": true,
+            "reference": true,
+            "amount_with_unit": true,
+            "function": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "verbatim_output",
+          "unchanged_every_run": true,
+          "local_compression_ms": {
+            "samples": [
+              0.017017,
+              0.007618,
+              0.007153
+            ],
+            "median": 0.007618,
+            "min": 0.007153,
+            "max": 0.017017
+          }
+        }
+      }
+    },
+    {
+      "name": "source_identifiers",
+      "description": "Distinct functions; crucial source facts in a middle function",
+      "input_sha256": "20156c8ce9c8a876771d2f92b19420e58e1b72d5636683f23be6535492b060f6",
+      "input_chars": 15531,
+      "input_reference_tokens": 4097,
+      "sentinels": {
+        "function": "validate_settlement_quote",
+        "account": "acct_2b4f8109",
+        "comparison": "raw_units < -900719925474099312345",
+        "error": "E_UNIT_FLOOR_508"
+      },
+      "auto": {
+        "baseline": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            919,
+            915,
+            916
+          ],
+          "visible_reference_tokens_median": 916,
+          "reduction_pct_from_original_median": 77.64,
+          "visible_char_samples": [
+            3407,
+            3407,
+            3407
+          ],
+          "visible_sha256_samples": [
+            "26726a90a07a6421c35f01bf2940ed9fac137726fe27a787dfa0370b7628dc09",
+            "a418523d6f8de5f4887f3a1cfd4be423d7ad778d4ec16244951288297b9c257c",
+            "5e8ace6b29fd65b5e4a12cb303f28fed440baa48eb465fc13ea47733acd313ce"
+          ],
+          "sentinels_preserved": {
+            "function": false,
+            "account": false,
+            "comparison": false,
+            "error": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              8.440747,
+              18.715514,
+              13.731842
+            ],
+            "median": 13.731842,
+            "min": 8.440747,
+            "max": 18.715514
+          }
+        },
+        "current": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            4097,
+            4097,
+            4097
+          ],
+          "visible_reference_tokens_median": 4097,
+          "reduction_pct_from_original_median": 0.0,
+          "visible_char_samples": [
+            15531,
+            15531,
+            15531
+          ],
+          "visible_sha256_samples": [
+            "20156c8ce9c8a876771d2f92b19420e58e1b72d5636683f23be6535492b060f6",
+            "20156c8ce9c8a876771d2f92b19420e58e1b72d5636683f23be6535492b060f6",
+            "20156c8ce9c8a876771d2f92b19420e58e1b72d5636683f23be6535492b060f6"
+          ],
+          "sentinels_preserved": {
+            "function": true,
+            "account": true,
+            "comparison": true,
+            "error": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "verbatim_output",
+          "unchanged_every_run": true,
+          "local_compression_ms": {
+            "samples": [
+              0.472628,
+              0.172341,
+              0.254637
+            ],
+            "median": 0.254637,
+            "min": 0.172341,
+            "max": 0.472628
+          }
+        }
+      },
+      "explicit": {
+        "baseline": {
+          "requested_mode": "code",
+          "visible_reference_token_samples": [
+            919,
+            915,
+            916
+          ],
+          "visible_reference_tokens_median": 916,
+          "reduction_pct_from_original_median": 77.64,
+          "visible_char_samples": [
+            3407,
+            3407,
+            3407
+          ],
+          "visible_sha256_samples": [
+            "26726a90a07a6421c35f01bf2940ed9fac137726fe27a787dfa0370b7628dc09",
+            "a418523d6f8de5f4887f3a1cfd4be423d7ad778d4ec16244951288297b9c257c",
+            "5e8ace6b29fd65b5e4a12cb303f28fed440baa48eb465fc13ea47733acd313ce"
+          ],
+          "sentinels_preserved": {
+            "function": false,
+            "account": false,
+            "comparison": false,
+            "error": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              4.117732,
+              6.500399,
+              4.433573
+            ],
+            "median": 4.433573,
+            "min": 4.117732,
+            "max": 6.500399
+          }
+        },
+        "current": {
+          "requested_mode": "code",
+          "visible_reference_token_samples": [
+            919,
+            915,
+            916
+          ],
+          "visible_reference_tokens_median": 916,
+          "reduction_pct_from_original_median": 77.64,
+          "visible_char_samples": [
+            3407,
+            3407,
+            3407
+          ],
+          "visible_sha256_samples": [
+            "26726a90a07a6421c35f01bf2940ed9fac137726fe27a787dfa0370b7628dc09",
+            "a418523d6f8de5f4887f3a1cfd4be423d7ad778d4ec16244951288297b9c257c",
+            "5e8ace6b29fd65b5e4a12cb303f28fed440baa48eb465fc13ea47733acd313ce"
+          ],
+          "sentinels_preserved": {
+            "function": false,
+            "account": false,
+            "comparison": false,
+            "error": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              9.061768,
+              3.758805,
+              3.305692
+            ],
+            "median": 3.758805,
+            "min": 3.305692,
+            "max": 9.061768
+          }
+        }
+      }
+    },
+    {
+      "name": "csv_middle_error",
+      "description": "Distinct table records with an anomaly away from the edges",
+      "input_sha256": "bde35b0188899c829ac59d85adb6166653e302111d38edf1e126bb81a98c1130",
+      "input_chars": 4474,
+      "input_reference_tokens": 2168,
+      "sentinels": {
+        "id": "csv_9a32ff",
+        "signed_integer": "-765432109",
+        "error": "E_RECONCILE_62"
+      },
+      "auto": {
+        "baseline": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            175,
+            173,
+            175
+          ],
+          "visible_reference_tokens_median": 175,
+          "reduction_pct_from_original_median": 91.93,
+          "visible_char_samples": [
+            396,
+            396,
+            396
+          ],
+          "visible_sha256_samples": [
+            "dd7b7dd6611d6fbeda027ee87d48a19993a71979011280e78210a019f2206713",
+            "2794ce6e04e523335d8de9dfe5b10760aec4090ae72c16989dde8608402aeef8",
+            "178c48a9287458dd77ce4ea11cd3710557b125a89d83c5d3efc8b3b0c441c395"
+          ],
+          "sentinels_preserved": {
+            "id": false,
+            "signed_integer": false,
+            "error": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              22.23147,
+              7.88016,
+              8.644935
+            ],
+            "median": 8.644935,
+            "min": 7.88016,
+            "max": 22.23147
+          }
+        },
+        "current": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            2168,
+            2168,
+            2168
+          ],
+          "visible_reference_tokens_median": 2168,
+          "reduction_pct_from_original_median": 0.0,
+          "visible_char_samples": [
+            4474,
+            4474,
+            4474
+          ],
+          "visible_sha256_samples": [
+            "bde35b0188899c829ac59d85adb6166653e302111d38edf1e126bb81a98c1130",
+            "bde35b0188899c829ac59d85adb6166653e302111d38edf1e126bb81a98c1130",
+            "bde35b0188899c829ac59d85adb6166653e302111d38edf1e126bb81a98c1130"
+          ],
+          "sentinels_preserved": {
+            "id": true,
+            "signed_integer": true,
+            "error": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "verbatim_output",
+          "unchanged_every_run": true,
+          "local_compression_ms": {
+            "samples": [
+              0.603145,
+              0.14456,
+              0.12676
+            ],
+            "median": 0.14456,
+            "min": 0.12676,
+            "max": 0.603145
+          }
+        }
+      },
+      "explicit": {
+        "baseline": {
+          "requested_mode": "csv",
+          "visible_reference_token_samples": [
+            175,
+            173,
+            175
+          ],
+          "visible_reference_tokens_median": 175,
+          "reduction_pct_from_original_median": 91.93,
+          "visible_char_samples": [
+            396,
+            396,
+            396
+          ],
+          "visible_sha256_samples": [
+            "dd7b7dd6611d6fbeda027ee87d48a19993a71979011280e78210a019f2206713",
+            "2794ce6e04e523335d8de9dfe5b10760aec4090ae72c16989dde8608402aeef8",
+            "178c48a9287458dd77ce4ea11cd3710557b125a89d83c5d3efc8b3b0c441c395"
+          ],
+          "sentinels_preserved": {
+            "id": false,
+            "signed_integer": false,
+            "error": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              2.936945,
+              2.677288,
+              2.416578
+            ],
+            "median": 2.677288,
+            "min": 2.416578,
+            "max": 2.936945
+          }
+        },
+        "current": {
+          "requested_mode": "csv",
+          "visible_reference_token_samples": [
+            175,
+            173,
+            175
+          ],
+          "visible_reference_tokens_median": 175,
+          "reduction_pct_from_original_median": 91.93,
+          "visible_char_samples": [
+            396,
+            396,
+            396
+          ],
+          "visible_sha256_samples": [
+            "dd7b7dd6611d6fbeda027ee87d48a19993a71979011280e78210a019f2206713",
+            "2794ce6e04e523335d8de9dfe5b10760aec4090ae72c16989dde8608402aeef8",
+            "178c48a9287458dd77ce4ea11cd3710557b125a89d83c5d3efc8b3b0c441c395"
+          ],
+          "sentinels_preserved": {
+            "id": false,
+            "signed_integer": false,
+            "error": false
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "stored_receipt",
+          "unchanged_every_run": false,
+          "local_compression_ms": {
+            "samples": [
+              2.920723,
+              14.848409,
+              2.843655
+            ],
+            "median": 2.920723,
+            "min": 2.843655,
+            "max": 14.848409
+          }
+        }
+      }
+    },
+    {
+      "name": "small_unchanged",
+      "description": "Short Unicode output below the compression threshold",
+      "input_sha256": "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+      "input_chars": 52,
+      "input_reference_tokens": 20,
+      "sentinels": {
+        "status": "status=ok",
+        "signed_amount": "-0.25 EUR",
+        "unicode": "vérifié"
+      },
+      "auto": {
+        "baseline": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            20,
+            20,
+            20
+          ],
+          "visible_reference_tokens_median": 20,
+          "reduction_pct_from_original_median": 0.0,
+          "visible_char_samples": [
+            52,
+            52,
+            52
+          ],
+          "visible_sha256_samples": [
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26"
+          ],
+          "sentinels_preserved": {
+            "status": true,
+            "signed_amount": true,
+            "unicode": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "verbatim_output",
+          "unchanged_every_run": true,
+          "local_compression_ms": {
+            "samples": [
+              0.004959,
+              0.003137,
+              0.002235
+            ],
+            "median": 0.003137,
+            "min": 0.002235,
+            "max": 0.004959
+          }
+        },
+        "current": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            20,
+            20,
+            20
+          ],
+          "visible_reference_tokens_median": 20,
+          "reduction_pct_from_original_median": 0.0,
+          "visible_char_samples": [
+            52,
+            52,
+            52
+          ],
+          "visible_sha256_samples": [
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26"
+          ],
+          "sentinels_preserved": {
+            "status": true,
+            "signed_amount": true,
+            "unicode": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "verbatim_output",
+          "unchanged_every_run": true,
+          "local_compression_ms": {
+            "samples": [
+              0.005024,
+              0.002807,
+              0.001911
+            ],
+            "median": 0.002807,
+            "min": 0.001911,
+            "max": 0.005024
+          }
+        }
+      },
+      "explicit": {
+        "baseline": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            20,
+            20,
+            20
+          ],
+          "visible_reference_tokens_median": 20,
+          "reduction_pct_from_original_median": 0.0,
+          "visible_char_samples": [
+            52,
+            52,
+            52
+          ],
+          "visible_sha256_samples": [
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26"
+          ],
+          "sentinels_preserved": {
+            "status": true,
+            "signed_amount": true,
+            "unicode": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "verbatim_output",
+          "unchanged_every_run": true,
+          "local_compression_ms": {
+            "samples": [
+              0.005828,
+              0.002767,
+              0.002147
+            ],
+            "median": 0.002767,
+            "min": 0.002147,
+            "max": 0.005828
+          }
+        },
+        "current": {
+          "requested_mode": "auto",
+          "visible_reference_token_samples": [
+            20,
+            20,
+            20
+          ],
+          "visible_reference_tokens_median": 20,
+          "reduction_pct_from_original_median": 0.0,
+          "visible_char_samples": [
+            52,
+            52,
+            52
+          ],
+          "visible_sha256_samples": [
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+            "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26"
+          ],
+          "sentinels_preserved": {
+            "status": true,
+            "signed_amount": true,
+            "unicode": true
+          },
+          "restoration_exact_every_run": true,
+          "restoration_method": "verbatim_output",
+          "unchanged_every_run": true,
+          "local_compression_ms": {
+            "samples": [
+              0.009225,
+              0.008073,
+              0.004383
+            ],
+            "median": 0.008073,
+            "min": 0.004383,
+            "max": 0.009225
+          }
+        }
+      }
+    }
+  ]
+}

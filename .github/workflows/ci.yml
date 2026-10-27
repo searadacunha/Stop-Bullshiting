@@ -22,3 +22,20 @@ jobs:
           sbs --version
           sbs doctor
           sbs bench
+      - name: Reference tokenizer and fidelity benchmark
+        if: matrix.python-version == '3.12'
+        run: |
+          python -m pip install '.[tokens]'
+          sbs bench --tokenizer o200k_base
+          python scripts/benchmark_compression.py --tokenizer o200k_base > /tmp/sbs-benchmark.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('/tmp/sbs-benchmark.json').read_text())['current']
+          assert report['tokenizer']['available'], report['tokenizer']
+          for case in report['cases']:
+              assert case['restoration_exact_every_run'], case['name']
+              assert all(s['present_in_every_preview'] for s in case['sentinels'].values()), case['name']
+              assert all(s['reported_visible_chars_match'] for s in case['samples']), case['name']
+          print('All six auto-mode fixtures preserve their sentinels and exact originals.')
+          PY

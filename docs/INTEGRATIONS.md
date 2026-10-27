@@ -54,7 +54,17 @@ lines are left in place. Open a new terminal for changes to take effect.
 
 `sbs mcp` runs stdio JSON-RPC with no network listener. Tools are explicit and bounded. The server does not mutate an agent configuration or automatically intercept other MCP responses.
 
-The 7 tools provide text compaction/restore, source navigation, and local project notes. `sbs_read` always yields exact line contents. `sbs_restore` returns at most 20,000 characters over MCP; for longer originals use the CLI.
+The 7 tools provide text compaction/restore, source navigation, and local project notes. `sbs_read` always yields exact line contents.
+
+`sbs_restore` accepts a receipt ID and optional `start`, `end`, `query`, `context` (default 2) and `limit` (default 50) arguments. Ranges are 1-based and inclusive; queries are case-sensitive literals. Selected lines retain their exact contents with line numbers added. Responses include counts and explicit omission notices, and never cut an oversized line silently.
+
+An unqualified restore of an original at most 20,000 characters remains unchanged. Larger originals or explicit selections use bounded views, including metadata, with at most 50 source lines considered by default. Use a later range or a literal query to reach diagnostics beyond the initial response. For an uncapped complete original, use `sbs show <receipt-id>` locally.
+
+For example, the arguments below retrieve matching lines with their neighbors:
+
+```json
+{"receipt":"a1b2c3d4e5f601","query":"request-0055","context":3,"limit":20}
+```
 
 ## Removal
 

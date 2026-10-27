@@ -4,7 +4,7 @@
 
 **Smaller terminal output. Inspectable previews. Recoverable originals.**
 
-*A dependency-free Python CLI for reducing the context coding agents read.*
+*A Python CLI for focused retrieval and smaller tool output. No mandatory runtime dependencies.*
 
 [![CI](https://github.com/searadacunha/Stop-Bullshiting/actions/workflows/ci.yml/badge.svg)](https://github.com/searadacunha/Stop-Bullshiting/actions/workflows/ci.yml)
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
@@ -25,25 +25,25 @@ sbs show <receipt-id>                  # Read its full original again
 sbs bench                             # Measure a local synthetic example
 ```
 
-**It does not increase Claude/Codex quotas, create extra tokens or guarantee lower bills.** It measures character reduction; actual usage depends on the agent, model, caching and subsequent requests. Use the CLI directly to inspect its behavior before enabling automatic integrations.
+**It does not increase Claude/Codex quotas, create extra tokens or guarantee lower bills.** It measures character reduction and optionally counts text with a named reference tokenizer; actual usage depends on the agent, model, caching and subsequent requests. Use the CLI directly to inspect its behavior before enabling automatic integrations.
 
 ## Features
 
 | Feature | What it does |
 |:--|:--|
-| **Output reduction** | Detects JSON, logs, diffs, code, CSV and generic text; keeps important errors and structural context |
-| **Reversible receipts** | Saves full original locally, recoverable using `sbs show <id>` |
+| **Selective output reduction** | Shortens eligible JSON, logs and text; protects recognized diagnostics and leaves detected code, diffs and CSV unchanged in auto mode |
+| **Targeted recovery** | Saves full originals locally; recover everything, exact line ranges or literal matches with context |
 | **Agent hook adapters** | Opt-in Claude `PostToolUse` and Codex `PreToolUse` adapters; compatibility depends on the installed client |
 | **Local MCP server** | Exposes search, AST symbols, exact lines, reversible compression and notes over stdio |
 | **Symbol navigation** | Precise Python AST class/function locations, targeted excerpts |
 | **Persistent notes** | Per-project local SQLite notes, never sent to an external indexing service |
 | **Real usage counters** | Reads available local Claude/Codex session usage records without inventing tokens |
-| **Benchmark mode** | Reports character reduction of synthetic examples or your real output samples |
+| **Benchmark mode** | Reports character counts, optional reference-token counts and a reproducible multi-fixture fidelity check |
 | **Terminal identity** | ANSI banner when launching Claude Code or Codex |
 
 ## Install
 
-**Python 3.10+** is required. The runtime has no third-party Python dependencies. Installation does **not** activate any agent hooks; integrations are opt-in.
+**Python 3.10+** is required. The core runtime has no third-party Python dependencies. Reference-token counting is an optional extra. Installation does **not** activate any agent hooks; integrations are opt-in.
 
 ### macOS (recommended: isolated CLI with pipx)
 
@@ -90,6 +90,8 @@ pipx upgrade stop-bullshiting
 |:--|:--|:--|
 | Reduce a command's output | `sbs run -- git log --oneline -1000` | Preview and local restoration ID when reduction is useful |
 | Recover an original | `sbs show <receipt-id>` | Complete stored text |
+| Recover selected lines | `sbs show <receipt-id> --start 120 --end 145` | Exact numbered lines from the original |
+| Find inside an original | `sbs show <receipt-id> --find "E_BALANCE" --context 3` | Literal matches and neighboring lines |
 | Find Python definitions | `sbs map src --name compress` | AST function/class names and line ranges |
 | Find a literal string | `sbs search "save_receipt" src` | Case-sensitive matching lines |
 | Read exact lines | `sbs read src/stop_bullshiting/compress.py 1 30` | Numbered source excerpt |
@@ -154,7 +156,22 @@ Recover everything without loss:
 sbs show a1b2c3d4e5f601
 ```
 
+Recover only what the next step needs:
+
+```bash
+sbs show a1b2c3d4e5f601 --find "request-0055" --context 3
+sbs show a1b2c3d4e5f601 --start 120 --end 145
+```
+
+Ranges are 1-based and inclusive. `--find` is case-sensitive and literal, and can be restricted with `--start` / `--end`. Selected views consider at most 50 source lines by default (`--limit` changes this) and fit within 20,000 characters including metadata. Matching lines take priority over context within the line limit. Omitted lines are reported explicitly; oversized lines are never silently shortened. Use `--context 0` for a tighter search response. Plain `sbs show <id>` still returns the complete original without a cap.
+
 You can disable local storage using `sbs compress --no-store` or `sbs run --no-store -- command`.
+
+### Protect evidence before reducing it
+
+In `auto` mode, output detected as source code, a diff or CSV passes through unchanged. Use `sbs map`, `sbs search` and `sbs read` to retrieve less source code in the first place. The explicit `--mode code`, `--mode diff` and `--mode csv` options remain available for deliberately lossy previews.
+
+Python traceback blocks pass through unchanged in auto, logs and plain modes. Recognized diagnostic lines in logs/text are kept whole or the original is returned. In JSON, recognized failing records, their parent branches and exact diagnostic values survive sampling, including records in the middle of arrays. If the protected view cannot fit the budget, SBS returns the original. These checks recognize common markers; they cannot identify every business-critical fact.
 
 ### Search code without dumping whole files
 
@@ -189,6 +206,33 @@ sbs bench --file sample.log --mode logs
 
 **Different metrics, different meaning:** `sbs stats` and `sbs bench` measure characters, *not* actual model token cost. `sbs usage` reads token usage records, but cannot assign causality to this tool. A reliable savings claim needs an A/B test with equivalent tasks, model, caching and context.
 
+### Optional reference-token measurement
+
+```bash
+# From a clone:
+python3 -m pip install -e '.[tokens]'
+sbs bench --file sample.log --tokenizer o200k_base
+
+# For a pipx installation, install the optional counter into its environment:
+pipx inject stop-bullshiting 'tiktoken>=0.7,<1'
+```
+
+`o200k_base` and `cl100k_base` are named reference encodings, not a claim about the tokenizer of your current Claude or Codex model. The first explicit use may download a public vocabulary table; input text is not uploaded. Core compression, recovery and ordinary benchmarks remain offline and dependency-free.
+
+`reference_token_counts` counts the actual preview, including its no-storage marker. `model_tokens_measured` remains `false`: the benchmark excludes wrapper diagnostics, tool envelopes, later recovery calls and provider billing. The built-in sample is highly repetitive and does not represent a whole coding session.
+
+The multi-fixture benchmark also checks sentinel preservation, exact restoration, unchanged short output and local compression latency:
+
+```bash
+python3 scripts/benchmark_compression.py
+python3 scripts/benchmark_compression.py --tokenizer o200k_base
+python3 scripts/benchmark_compression.py --tokenizer o200k_base --baseline /path/to/older/checkout
+# Inspect deliberately lossy modes separately:
+python3 scripts/benchmark_compression.py --explicit-modes
+```
+
+This script never downloads a tokenizer: an unavailable dependency or uncached vocabulary produces `null` token counts with a reason. See [the comparison, measured results and next steps](docs/TOKEN_EFFICIENCY.md).
+
 ### MCP: 7 local tools
 
 ```bash
@@ -205,6 +249,8 @@ codex mcp add stop-bullshiting -- sbs mcp
 If a client does not support that command format, use its MCP configuration UI and set command=`sbs`, args=`["mcp"]`. Registration differs by version and is not performed automatically by `setup`.
 
 MCP tools: `sbs_compact`, `sbs_restore`, `sbs_symbols`, `sbs_search`, `sbs_read`, `sbs_note_save`, `sbs_note_find`.
+
+`sbs_restore` accepts optional `start`, `end`, `query`, `context` and `limit` arguments. Agents can retrieve a diagnostic beyond the first 20,000 characters without resending the entire stored output.
 
 ## Architecture
 
@@ -232,9 +278,9 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/INTEGRATIONS.md](docs/IN
 
 ## Safety, privacy and limitations
 
-- No external HTTP requests, account credentials, proxy, model inference or subscription-limit changes.
+- Core operation needs no external HTTP requests, account credentials, proxy or model inference. Optional token counting may download a public vocabulary on first explicit use; it does not upload tool output or change subscription limits.
 - Original outputs and notes are stored locally in SQLite, **compressed but not encrypted**. They can contain secrets if your commands emit them. Use `--no-store` for sensitive data and clean stored receipts with `sbs purge --older-than-days 30`.
-- Truncation is **not semantically lossless**. The receipt guarantees access to the original, not identical model decisions. Errors are prioritized but can still be omitted under very small budgets.
+- Truncation is **not semantically lossless**. The receipt guarantees access to the original, not identical model decisions. Recognized diagnostics are protected in auto/logs/plain/JSON handling; unrecognized facts and explicit lossy code/diff/CSV modes still require verification against the original.
 - Invalid/corrupt configs are rejected rather than overwritten. Existing files are backed up; each installer can be reversed.
 - `sbs run` captures stdout for bounded postprocessing. Use `sbs run --raw -- <command>` for interactive commands or anything needing streaming stdout.
 - If receipt storage or reduction configuration fails after a command succeeds, `sbs run` emits the original output and keeps the command's exit status.

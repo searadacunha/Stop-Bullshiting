@@ -6,7 +6,7 @@
 - **Secrets inside tool output**: SQLite receipts use zlib only (not encryption). This tool does not sanitize secrets; use `--no-store` for sensitive output and encrypt your drive.
 - **Unexpected command execution**: the automatic Codex wrapper recognizes only basic read-only commands, rejects shell metacharacters and calls `subprocess.run` with an argument list (no shell execution). Explicit `sbs run` executes only the command supplied by the user or agent.
 - **Configuration corruption**: install routines merge JSON and backup any preexisting contents before changing them. Invalid JSON is not overwritten. The zsh integration has removable markers.
-- **Dependency compromise**: no runtime third-party Python dependencies, no updater and no external service.
+- **Dependency compromise**: no mandatory runtime third-party Python dependencies, no updater and no external service. The optional `tokens` extra installs tiktoken; explicitly requesting a reference count may download a public vocabulary on first use. Tool output is not uploaded.
 - **Agent hallucination / suppressed failures**: failing wrapped commands pass through their full output and original process return code. Search/excerpt routines return exact line text and file positions.
 
 ## User data

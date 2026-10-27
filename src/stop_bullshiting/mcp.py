@@ -7,11 +7,13 @@ No HTTP listener, subprocess execution or external model calls.
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
 from pathlib import Path
 
 from . import __version__
 from .compress import compress
+from .receipts import select_receipt
 from .store import get_receipt, note_get, note_list, note_put
 from .symbols import excerpt, search, symbol_map
 
@@ -30,8 +32,15 @@ TOOLS = [
     _tool("sbs_compact", "Compact a long text; recover original with sbs_restore. Character savings are not actual token metrics.",
           {"text": {"type": "string"}, "mode": {"type": "string", "enum": ["auto", "json", "logs", "diff", "code", "csv", "plain"]},
            "max_chars": {"type": "integer", "minimum": 300, "maximum": 20000}}, ["text"]),
-    _tool("sbs_restore", "Restore a previously compacted complete tool output by receipt ID.",
-          {"receipt": {"type": "string"}}, ["receipt"]),
+    _tool("sbs_restore", "Recover a stored original, or exact numbered lines using a range or literal query. Responses are capped at 20000 characters; narrow the selection for large originals.",
+          {"receipt": {"type": "string"},
+           "start": {"type": "integer", "minimum": 1, "description": "First line, inclusive (1-based)."},
+           "end": {"type": "integer", "minimum": 1, "description": "Last line, inclusive."},
+           "query": {"type": "string", "minLength": 1, "description": "Case-sensitive literal, not a regular expression."},
+           "context": {"type": "integer", "minimum": 0, "default": 2,
+                       "description": "Neighboring lines around each match, clipped to the requested range."},
+           "limit": {"type": "integer", "minimum": 1, "default": 50,
+                     "description": "Maximum selected source lines to consider, including oversized lines."}}, ["receipt"]),
     _tool("sbs_symbols", "Locate Python classes, functions and precise line ranges without reading entire files.",
           {"path": {"type": "string"}, "name": {"type": "string"}}, []),
     _tool("sbs_search", "Search files for a literal phrase and return bounded matching lines.",
@@ -62,9 +71,11 @@ def invoke(name: str, args: dict) -> dict:
             data = get_receipt(args["receipt"])
             if data is None:
                 raise ValueError("Unknown receipt ID")
-            # MCP output cap; the complete original is still accessible by CLI.
-            if len(data) > 20000:
-                return _text(data[:20000] + "\n[Original exceeds MCP response cap. Use `sbs show ID` locally.]")
+            selection = {key: args[key] for key in ("start", "end", "query", "context", "limit") if key in args}
+            # Small unqualified restores remain byte-for-byte compatible. Large
+            # originals use complete lines plus an explicit route to later data.
+            if selection or len(data) > 20000:
+                return _text(select_receipt(data, **selection, max_chars=20000))
             return _text(data)
         if name == "sbs_symbols":
             return _text("\n".join(symbol_map(Path(args.get("path", ".")),
@@ -82,7 +93,7 @@ def invoke(name: str, args: dict) -> dict:
             entries = note_list(scope, args.get("query", ""))
             return _text("\n".join(f"{key}: {value[:500]}" for key, value, _ in entries))
         return _text(f"Unknown tool {name}", error=True)
-    except (KeyError, TypeError, ValueError, OSError) as exc:
+    except (KeyError, TypeError, ValueError, OSError, sqlite3.Error) as exc:
         return _text(f"{type(exc).__name__}: {exc}", error=True)
 
 

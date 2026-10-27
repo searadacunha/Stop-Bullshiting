@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from stop_bullshiting.mcp import dispatch, invoke
+from stop_bullshiting.store import save_receipt
 
 
 class McpTests(unittest.TestCase):
@@ -33,6 +34,50 @@ class McpTests(unittest.TestCase):
         original = invoke("sbs_restore", {"receipt": ident})["content"][0]["text"]
         self.assertEqual(original, large)
         self.assertTrue(invoke("nonexistent", {})["isError"])
+
+    def test_restore_schema_exposes_optional_targeted_retrieval(self):
+        tools = dispatch({"id": 3, "method": "tools/list"})["result"]["tools"]
+        schema = next(tool for tool in tools if tool["name"] == "sbs_restore")["inputSchema"]
+        self.assertEqual(schema["required"], ["receipt"])
+        self.assertTrue({"start", "end", "query", "context", "limit"} <= set(schema["properties"]))
+
+    def test_restore_can_reach_late_diagnostics_without_resending_original(self):
+        original = "ordinary output\n" * 2000 + "UNUSUAL_STATE Ω-request-123456789\nlast\n"
+        receipt = save_receipt(original, source="test", mode="plain", visible_chars=100)
+        reply = invoke("sbs_restore", {"receipt": receipt, "query": "UNUSUAL_STATE", "context": 0})
+        self.assertFalse(reply["isError"])
+        view = reply["content"][0]["text"]
+        self.assertIn("2001: UNUSUAL_STATE Ω-request-123456789\n", view)
+        self.assertNotIn("ordinary output", view)
+        self.assertLess(len(view), 1000)
+        window = invoke("sbs_restore", {"receipt": receipt, "start": 2001, "end": 2002})
+        self.assertIn("2002: last\n", window["content"][0]["text"])
+
+    def test_large_default_restore_is_capped_and_explains_targeted_access(self):
+        original = "x" * 25000 + "\nshort tail\n"
+        receipt = save_receipt(original, source="test", mode="plain", visible_chars=100)
+        reply = invoke("sbs_restore", {"receipt": receipt})
+        view = reply["content"][0]["text"]
+        self.assertFalse(reply["isError"])
+        self.assertLessEqual(len(view), 20000)
+        self.assertIn("SBS line 1 omitted:", view)
+        self.assertIn("2: short tail\n", view)
+        self.assertIn("start/end/query", view)
+
+    def test_targeted_restore_reports_invalid_arguments_as_tool_errors(self):
+        receipt = save_receipt("first\nsecond\n", source="test", mode="plain", visible_chars=1)
+        for selection in ({"start": 0}, {"end": False}, {"query": ""}, {"limit": -1}, {"context": "2"}):
+            with self.subTest(selection=selection):
+                reply = invoke("sbs_restore", {"receipt": receipt, **selection})
+                self.assertTrue(reply["isError"])
+                self.assertIn("ValueError", reply["content"][0]["text"])
+
+    def test_database_errors_remain_mcp_tool_errors(self):
+        import sqlite3
+        with patch("stop_bullshiting.mcp.get_receipt", side_effect=sqlite3.DatabaseError("invalid store")):
+            reply = invoke("sbs_restore", {"receipt": "unknown"})
+        self.assertTrue(reply["isError"])
+        self.assertIn("DatabaseError", reply["content"][0]["text"])
 
 
 if __name__ == "__main__":

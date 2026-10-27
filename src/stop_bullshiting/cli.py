@@ -18,6 +18,8 @@ from .banner import banner
 from .compress import compress
 from .config import home
 from .hooks import claude_post_hook, codex_pre_hook, safe_read_command, setup_agent, setup_shell
+from .metrics import TOKENIZERS, measure_reference_tokens
+from .receipts import select_receipt
 from .store import get_receipt, note_delete, note_get, note_list, note_put, purge, report
 from .symbols import excerpt, search, symbol_map
 
@@ -125,8 +127,13 @@ def build_parser() -> argparse.ArgumentParser:
     comp.add_argument("--min-chars", type=int, default=1400)
     comp.add_argument("--no-store", action="store_true", help="No local reversible receipt")
     comp.add_argument("--stats", action="store_true")
-    show = sub.add_parser("show", help="Recover a complete original from its receipt ID")
+    show = sub.add_parser("show", help="Recover an original or select exact lines from a receipt")
     show.add_argument("id")
+    show.add_argument("--start", type=int, help="First original line to retrieve (1-based)")
+    show.add_argument("--end", type=int, help="Last original line to retrieve (inclusive)")
+    show.add_argument("--find", help="Find a case-sensitive literal phrase in the original")
+    show.add_argument("--context", type=int, default=2, help="Context lines around each match")
+    show.add_argument("--limit", type=int, default=50, help="Maximum source lines to consider; matches precede context")
     run = sub.add_parser("run", help="Execute a command and optionally compact its stdout")
     run.add_argument("--mode", choices=["auto", "json", "logs", "diff", "code", "csv", "plain"], default="auto")
     run.add_argument("--max-chars", type=int, default=3500)
@@ -177,6 +184,9 @@ def build_parser() -> argparse.ArgumentParser:
     bench = sub.add_parser("bench", help="Run deterministic local synthetic or file benchmark")
     bench.add_argument("--file", type=Path, default=None)
     bench.add_argument("--mode", default="auto", choices=["auto", "json", "logs", "diff", "code", "csv", "plain"])
+    bench.add_argument("--max-chars", type=int, default=3500)
+    bench.add_argument("--tokenizer", choices=TOKENIZERS,
+                       help="Optional named reference encoding; requires the tokens extra")
     sub.add_parser("mcp", help="Start local JSON-RPC MCP stdio server (no network)")
     sub.add_parser("doctor", help="Inspect optional prerequisites and local state")
     return p
@@ -199,6 +209,12 @@ def main(argv: list[str] | None = None) -> int:
             if data is None:
                 print(f"Receipt {args.id} not found", file=sys.stderr)
                 return 1
+            selected = args.start is not None or args.end is not None or args.find is not None
+            if selected:
+                data = select_receipt(data, start=args.start, end=args.end,
+                                      query=args.find, context=args.context, limit=args.limit)
+            elif args.context != 2 or args.limit != 50:
+                raise ValueError("--context and --limit require --find or a line selection")
             sys.stdout.write(data)
         elif args.cmd == "run":
             return _execute(_sanitize_args(args.argv), no_store=args.no_store,
@@ -263,12 +279,21 @@ def main(argv: list[str] | None = None) -> int:
                                  ["2026-10-26 WARNING retrying operation"] * 7 +
                                  ["2026-10-26 ERROR failed to parse row 44"] +
                                  ["2026-10-26 INFO summary: 250 tasks completed"])
-            item = compress(text, mode=args.mode, source="benchmark", store=False)
-            print(json.dumps({"mode": item.mode, "original_chars": item.original_chars,
-                              "visible_chars": item.visible_chars,
-                              "char_reduction_pct": round(item.saved_percent, 2),
-                              "bench_type": "file" if args.file else "synthetic",
-                              "model_tokens_measured": False}, indent=2))
+            item = compress(text, mode=args.mode, max_len=args.max_chars,
+                            source="benchmark", store=False)
+            measured = {"mode": item.mode, "original_chars": item.original_chars,
+                        "visible_chars": item.visible_chars,
+                        "char_reduction_pct": round(item.saved_percent, 2),
+                        "bench_type": "file" if args.file else "synthetic",
+                        "measurement_scope": "single_output_preview",
+                        "preview_marker_included": True,
+                        "wrapper_diagnostics_included": False,
+                        "receipt_stored": False,
+                        "model_tokens_measured": False}
+            if args.tokenizer:
+                measured["reference_token_counts"] = measure_reference_tokens(
+                    text, item.text, args.tokenizer)
+            print(json.dumps(measured, indent=2))
         elif args.cmd == "mcp":
             from .mcp import serve
             return serve()

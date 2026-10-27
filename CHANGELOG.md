@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-10-27
+
+- Retrieve exact receipt line ranges or literal matches with context from CLI and MCP.
+- Preserve recognized JSON failure records, including middle-array anomalies and exact diagnostic values.
+- Keep detected source code, diffs and CSV unchanged in auto mode; keep Python tracebacks intact in auto/logs/plain modes.
+- Keep recognized diagnostic lines whole or return the original when the requested view cannot contain them.
+- Add optional named reference-token counts without making tiktoken a core dependency or claiming provider-billed savings.
+- Add an offline, multi-fixture benchmark with baseline comparison, fidelity checks and explicit measurement boundaries.
+- Document the comparison with RTK, Headroom, Aider, Repomix and LLMLingua, plus a practical measurement roadmap.
 
 - Preserve original command output and exit status when local reduction/storage fails.
 - Preserve third-party hooks sharing a group with SBS during reinstall/removal.
