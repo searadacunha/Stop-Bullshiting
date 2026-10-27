@@ -38,10 +38,12 @@ def safe_read_command(command: str) -> bool:
         return False
     if not parts or any("\n" in part or "\r" in part for part in parts):
         return False
-    first = Path(parts[0]).name
+    # A path such as ./ls or /tmp/git may execute arbitrary code despite its basename.
+    # Only allow plain command names; shell operators are already rejected above.
+    first = parts[0]
     if first == "git" and len(parts) >= 2:
         return parts[1] in {"status", "log", "diff", "show", "ls-files"} and not any(
-            arg.startswith("--output") or arg in ("-o", "--ext-diff") for arg in parts[2:])
+            arg.startswith(("--output", "-o")) or arg in ("--ext-diff", "--textconv") for arg in parts[2:])
     if first in {"rg", "grep"}:
         return not any(arg in ("--pre", "--pre-glob", "-P", "--passthru")
                        or arg.startswith("--pre=") or arg.startswith("--pre-glob=") for arg in parts[1:])
