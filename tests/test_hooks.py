@@ -1,5 +1,6 @@
 import json
 import os
+import shlex
 import tempfile
 import unittest
 from pathlib import Path
@@ -53,6 +54,14 @@ class HookTests(unittest.TestCase):
         event["tool_input"]["command"] = "git push"
         self.assertEqual(codex_pre_hook(json.dumps(event)), "")
 
+    def test_failed_claude_output_remains_untouched(self):
+        for exit_key in ("exitCode", "exit_code", "returncode"):
+            with self.subTest(exit_key=exit_key):
+                event = {"tool_name": "Bash", "hook_event_name": "PostToolUse",
+                         "tool_input": {"command": "git status"},
+                         "tool_response": {"stdout": "diagnostic\n" * 500, exit_key: 7}}
+                self.assertEqual(claude_post_hook(json.dumps(event)), "")
+
     def test_install_uninstall_preserves_existing_hooks(self):
         root = Path(self.temp.name)
         settings = root / ".claude/settings.json"
@@ -78,6 +87,22 @@ class HookTests(unittest.TestCase):
         setup_agent("codex", remove=True, root=root)
         self.assertEqual(json.loads(path.read_text()), {})
 
+    def test_mixed_group_preserves_neighboring_hooks(self):
+        root = Path(self.temp.name)
+        settings = root / ".claude/settings.json"
+        settings.parent.mkdir(parents=True)
+        neighbor = {"type": "command", "command": "echo another-hook", "timeout": 20}
+        group = {"matcher": "Bash", "description": "user configuration", "hooks": [
+            {"type": "command", "command": "python -m stop_bullshiting hook claude"}, neighbor]}
+        settings.write_text(json.dumps({"hooks": {"PostToolUse": [group]}}))
+        setup_agent("claude", root=root)
+        groups = json.loads(settings.read_text())["hooks"]["PostToolUse"]
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(groups[0], {**group, "hooks": [neighbor]})
+        setup_agent("claude", remove=True, root=root)
+        groups = json.loads(settings.read_text())["hooks"]["PostToolUse"]
+        self.assertEqual(groups, [{**group, "hooks": [neighbor]}])
+
     def test_shell_aliases_installed_once(self):
         root = Path(self.temp.name)
         target = root / ".zshrc"
@@ -89,6 +114,16 @@ class HookTests(unittest.TestCase):
         self.assertIn("export FOO=bar", text)
         setup_shell(root=root, remove=True)
         self.assertEqual(target.read_text(), "export FOO=bar\n\n")
+
+    def test_shell_launcher_uses_installed_interpreter(self):
+        root = Path(self.temp.name)
+        interpreter = "/tmp/example environment/bin/python"
+        with patch("stop_bullshiting.hooks.sys.executable", interpreter):
+            setup_shell(root=root)
+        snippet = (root / ".zshrc").read_text()
+        for agent in ("claude", "codex"):
+            self.assertIn(f"command {shlex.quote(interpreter)} -m stop_bullshiting launch {agent}", snippet)
+        self.assertNotIn("command sbs", snippet)
 
 
 if __name__ == "__main__":

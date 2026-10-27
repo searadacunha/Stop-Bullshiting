@@ -29,4 +29,4 @@ For A/B measurement, use the same agent version/model, task fixtures, cache cond
 
 ## Failure strategy
 
-Hooks emit no output if the event schema is unfamiliar, output is too short, or storage fails. Erroring subprocesses emit original stdout/stderr and preserve return code. Stored originals allow debugging any destructive truncation decision. If an integration creates problems, run `sbs setup all --remove` and restore from the `.backup-*` file if needed.
+Hooks emit no output if the event schema is unfamiliar, output is too short, or storage fails. Erroring subprocesses emit original stdout/stderr and preserve return code. If local receipt storage or reduction configuration fails after a command succeeds, the CLI also preserves its complete original output and exit code. Stored originals allow debugging a truncation decision. If an integration creates problems, run `sbs setup all --remove` and restore from the `.backup-*` file if needed.

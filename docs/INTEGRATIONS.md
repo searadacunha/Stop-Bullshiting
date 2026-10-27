@@ -1,5 +1,23 @@
 # Agent integrations
 
+Hook adapters are opt-in and client-version dependent. Unit tests verify the JSON
+fixtures used by this project; they are not an end-to-end compatibility matrix.
+`sbs doctor` checks executable/configuration presence, not whether a client accepts
+output replacement. The explicit `sbs run -- <command>` workflow is independent
+of hook support.
+
+## Documented contracts
+
+Checked against upstream documentation on **2026-10-27**:
+
+| Client | Contract used by SBS | Primary reference |
+|:--|:--|:--|
+| Claude Code | `PostToolUse.updatedToolOutput` with the structured Bash response shape | [Claude Code hooks reference](https://code.claude.com/docs/en/hooks#posttooluse-decision-control) |
+| Codex | `PreToolUse`, canonical hook name `Bash`, `permissionDecision: allow` with `updatedInput.command` | [Codex hooks](https://developers.openai.com/codex/hooks) |
+
+These are documented interfaces, not a claim that the user's installed client
+version has been tested. Older versions can differ.
+
 ## Claude Code
 
 Run `sbs setup claude`. The installer merges one `PostToolUse` / `Bash` command hook into `~/.claude/settings.json`. It does not alter `permissions`, credentials or model settings. Claude Code versions supporting `updatedToolOutput` can replace model-visible `stdout` for eligible large, successfully completed Bash results. Stderr is preserved and the source tool has already run.
@@ -12,13 +30,25 @@ If the hook response is not compatible with your installed Claude Code version, 
 
 Run `sbs setup codex`. The installer merges one `PreToolUse` / `Bash` command hook into `~/.codex/hooks.json`. The hook accepts only recognized read-only shell commands without redirects, pipelines, substitutions or shell operators, and rewrites them to `python -m stop_bullshiting shell '<original command>'`.
 
+Then open **`/hooks` in Codex** to review and trust the exact new or changed hook.
+Current Codex documentation states that unreviewed non-managed hooks are skipped;
+writing `hooks.json` does not by itself activate the hook. SBS does not bypass
+that trust review.
+
 The wrapper parses the arguments with `shlex`, executes via `subprocess` (no nested shell), retains the original exit code, leaves failures unchanged and stores complete original output locally if it is reduced. For unsupported commands it emits no hook action.
 
 Codex `PreToolUse` input rewrites involve `permissionDecision: allow`, so the allowlist must not be expanded to commands that modify data or need interactive approval. If your Codex version does not support this hook schema, use `sbs run` explicitly instead.
 
 ## Shell logo
 
-`sbs setup shell` installs two zsh functions delimited by comments. It invokes the *real* `claude` or `codex` executable after showing an ANSI startup banner. Existing aliases/functions within the `STOP-BULLSHITING` marker are replaced only when reinstalling; other `.zshrc` lines are left in place. Open a new terminal for changes to take effect.
+`sbs setup shell` installs two zsh functions delimited by comments. Each uses the
+absolute Python interpreter that performed setup, so it also works with a virtual
+environment that is not active in the new terminal. Keep that interpreter and
+installation available; rerun setup after moving or reinstalling them. The
+launcher invokes the *real* `claude` or `codex` executable after showing an ANSI
+banner. The banner itself does not reduce output. Existing functions within the
+`STOP-BULLSHITING` marker are replaced only when reinstalling; other `.zshrc`
+lines are left in place. Open a new terminal for changes to take effect.
 
 ## MCP server
 
@@ -35,3 +65,5 @@ sbs setup shell --remove
 ```
 
 Backups are written beside the original files with a UTC timestamp. No user credentials are accessed or changed.
+Removing or reinstalling SBS preserves unrelated hooks even when they share its
+event group and matcher.

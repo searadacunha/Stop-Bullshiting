@@ -72,6 +72,8 @@ def claude_post_hook(raw: str) -> str:
     stdout = response.get("stdout")
     if not isinstance(stdout, str) or "\x00" in stdout or response.get("interrupted") or response.get("isImage"):
         return ""
+    if any(response[key] != 0 for key in ("exitCode", "exit_code", "returncode") if key in response):
+        return ""
     if not isinstance(response.get("stderr", ""), str):
         return ""
     try:
@@ -145,9 +147,16 @@ def _hook_definition(agent: str) -> dict:
     ]}
 
 
-def _is_ours(group: dict) -> bool:
-    return any(SBS_MARKER in str(h.get("command", "")) for h in group.get("hooks", [])
-               if isinstance(h, dict))
+def _without_our_hooks(group):
+    """Remove individual SBS entries, retaining neighboring hooks and metadata."""
+    if not isinstance(group, dict) or not isinstance(group.get("hooks"), list):
+        return group
+    existing = group["hooks"]
+    kept = [hook for hook in existing if not (
+        isinstance(hook, dict) and SBS_MARKER in str(hook.get("command", "")))]
+    if len(kept) == len(existing):
+        return group
+    return {**group, "hooks": kept} if kept else None
 
 
 def setup_agent(agent: str, *, remove: bool = False, root: Path | None = None) -> str:
@@ -164,7 +173,7 @@ def setup_agent(agent: str, *, remove: bool = False, root: Path | None = None) -
     if not isinstance(groups, list):
         raise ValueError(f"Invalid {event} configuration in {path}")
     # Remove only this project's hook, keeping every other hook unmodified.
-    groups[:] = [group for group in groups if not (isinstance(group, dict) and _is_ours(group))]
+    groups[:] = [cleaned for group in groups if (cleaned := _without_our_hooks(group)) is not None]
     if not remove:
         groups.append(_hook_definition(agent))
     if not groups:
@@ -188,7 +197,7 @@ def setup_shell(*, remove: bool = False, root: Path | None = None) -> str:
         return _save_with_backup(target, cleaned)
     snippet = (f"{SHELL_START}\n"
                "# Display SBS banner before launching actual CLI binaries.\n"
-               "claude() { command sbs launch claude -- \"$@\"; }\n"
-               "codex() { command sbs launch codex -- \"$@\"; }\n"
+               f"claude() {{ command {shlex.quote(sys.executable)} -m stop_bullshiting launch claude -- \"$@\"; }}\n"
+               f"codex() {{ command {shlex.quote(sys.executable)} -m stop_bullshiting launch codex -- \"$@\"; }}\n"
                f"{SHELL_END}\n")
     return _save_with_backup(target, cleaned.rstrip("\n") + "\n\n" + snippet)
