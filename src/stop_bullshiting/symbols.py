@@ -25,6 +25,9 @@ def _iterate(root: Path):
             if count >= MAX_FILES:
                 return
             path = Path(folder) / file
+            # Do not follow in-workspace symlinked files into another tree.
+            if path.is_symlink():
+                continue
             if path.suffix not in (".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".md"):
                 continue
             count += 1

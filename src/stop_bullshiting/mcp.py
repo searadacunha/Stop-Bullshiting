@@ -7,6 +7,7 @@ No HTTP listener, subprocess execution or external model calls.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import sys
 from pathlib import Path
@@ -20,6 +21,27 @@ from .symbols import excerpt, search, symbol_map
 SERVER = "stop-bullshiting"
 PROTOCOL = "2025-03-26"
 MAX_MESSAGE = 2 * 1024 * 1024
+
+
+def _workspace_path(raw: str) -> Path:
+    """Restrict MCP file and note operations to a single resolved workspace.
+
+    The trusted MCP host may set SBS_WORKSPACE. Otherwise the server's current
+    working directory is the boundary. resolve() checks absolute paths, '..'
+    and symlink targets before a read; no path outside it is authorized.
+    """
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError("A workspace-relative path is required")
+    try:
+        root = Path(os.environ.get("SBS_WORKSPACE") or os.getcwd()).expanduser().resolve()
+        if not root.is_dir():
+            raise ValueError("SBS_WORKSPACE must be a directory")
+        target = (root / Path(raw).expanduser()).resolve()
+    except RuntimeError as exc:
+        raise ValueError("Cannot resolve workspace path") from exc
+    if not target.is_relative_to(root):
+        raise ValueError("Path outside MCP workspace")
+    return target
 
 
 def _tool(name: str, description: str, properties: dict, required: list[str] | None = None) -> dict:
@@ -78,18 +100,18 @@ def invoke(name: str, args: dict) -> dict:
                 return _text(select_receipt(data, **selection, max_chars=20000))
             return _text(data)
         if name == "sbs_symbols":
-            return _text("\n".join(symbol_map(Path(args.get("path", ".")),
+            return _text("\n".join(symbol_map(_workspace_path(args.get("path", ".")),
                                                name_filter=args.get("name", ""))))
         if name == "sbs_search":
-            return _text("\n".join(search(args["query"], Path(args.get("path", ".")))))
+            return _text("\n".join(search(args["query"], _workspace_path(args.get("path", ".")))))
         if name == "sbs_read":
-            return _text(excerpt(Path(args["file"]), args["start"], args["end"]))
+            return _text(excerpt(_workspace_path(args["file"]), args["start"], args["end"]))
         if name == "sbs_note_save":
-            scope = str(Path(args.get("scope", ".")).resolve())
+            scope = str(_workspace_path(args.get("scope", ".")))
             note_put(scope, args["key"], args["text"])
             return _text("Note saved locally")
         if name == "sbs_note_find":
-            scope = str(Path(args.get("scope", ".")).resolve())
+            scope = str(_workspace_path(args.get("scope", ".")))
             entries = note_list(scope, args.get("query", ""))
             return _text("\n".join(f"{key}: {value[:500]}" for key, value, _ in entries))
         return _text(f"Unknown tool {name}", error=True)

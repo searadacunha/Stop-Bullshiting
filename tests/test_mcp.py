@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from stop_bullshiting.mcp import dispatch, invoke
@@ -79,6 +80,39 @@ class McpTests(unittest.TestCase):
         self.assertTrue(reply["isError"])
         self.assertIn("DatabaseError", reply["content"][0]["text"])
 
+
+    def test_mcp_files_and_notes_are_confined_to_workspace(self):
+        root = Path(self.temp.name)
+        workspace = root / "workspace"
+        workspace.mkdir()
+        (workspace / "allowed.py").write_text("def allowed():\n    return 'visible'\n")
+        private = root / "private.py"
+        private.write_text("def secret():\n    return 'DO_NOT_READ'\n")
+        (workspace / "escape.py").symlink_to(private)
+        with patch.dict(os.environ, {"SBS_WORKSPACE": str(workspace)}):
+            ok = invoke("sbs_read", {"file": str(workspace / "allowed.py"), "start": 1, "end": 2})
+            self.assertFalse(ok["isError"])
+            self.assertIn("def allowed()", ok["content"][0]["text"])
+            for forbidden in ("../private.py", str(private), "escape.py"):
+                with self.subTest(forbidden=forbidden):
+                    for name, args in (
+                        ("sbs_read", {"file": forbidden, "start": 1, "end": 1}),
+                        ("sbs_search", {"query": "DO_NOT_READ", "path": forbidden}),
+                        ("sbs_symbols", {"path": forbidden}),
+                        ("sbs_note_find", {"scope": forbidden}),
+                        ("sbs_note_save", {"key": "x", "text": "x", "scope": forbidden}),
+                    ):
+                        reply = invoke(name, args)
+                        self.assertTrue(reply["isError"], (name, forbidden))
+                        self.assertIn("outside MCP workspace", reply["content"][0]["text"])
+            # A directory search must also ignore symlinked files pointing out.
+            listing = invoke("sbs_symbols", {"path": "."})
+            self.assertFalse(listing["isError"])
+            self.assertIn("allowed", listing["content"][0]["text"])
+            self.assertNotIn("secret", listing["content"][0]["text"])
+            hit = invoke("sbs_search", {"query": "DO_NOT_READ", "path": "."})
+            self.assertFalse(hit["isError"])
+            self.assertNotIn("DO_NOT_READ", hit["content"][0]["text"])
 
 if __name__ == "__main__":
     unittest.main()
