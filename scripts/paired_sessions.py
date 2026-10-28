@@ -40,6 +40,10 @@ def read_trials(path: Path) -> list[dict]:
                 raise ValueError(f"line {number}: variant must be control or sbs")
             if type(row.get("success")) is not bool:
                 raise ValueError(f"line {number}: success must be a boolean")
+            for field in ("model", "task_revision", "repository_sha"):
+                value = row.get(field)
+                if value is not None and (not isinstance(value, str) or not value.strip()):
+                    raise ValueError(f"line {number}: {field} must be a nonempty string if supplied")
             for metric in METRICS:
                 val = row.get(metric)
                 if val is None:
@@ -63,19 +67,27 @@ def summarize(rows: list[dict]) -> dict:
         indexed[key][condition] = row
     pairs = []
     unmatched = []
+    excluded = []
     for key, trials in sorted(indexed.items()):
         if set(trials) != set(VARIANTS):
             unmatched.append({"task_id": key[0], "repeat": key[1],
                               "present": sorted(trials)})
             continue
         control, sbs = trials["control"], trials["sbs"]
-        # A direct comparison is invalid if the supplied model/input hashes differ.
-        for field in ("model", "task_revision", "repository_sha"):
-            if control.get(field) and sbs.get(field) and control[field] != sbs[field]:
+        # A missing model/task/snapshot is not a comparable run. Do not include
+        # it in success rates or cost/token summaries with a mere warning.
+        fields = ("model", "task_revision", "repository_sha")
+        missing = [field for field in fields if not control.get(field) or not sbs.get(field)]
+        if missing:
+            excluded.append({"task_id": key[0], "repeat": key[1],
+                             "missing_comparability_fields": missing})
+            continue
+        for field in fields:
+            if control[field] != sbs[field]:
                 raise ValueError(f"Non-equivalent pair {key}: {field} differs")
         pairs.append((key, control, sbs))
     if not pairs:
-        raise ValueError("No complete control/SBS pairs")
+        raise ValueError("No comparable control/SBS pairs with required metadata")
 
     metrics = {}
     for field in METRICS:
@@ -96,9 +108,8 @@ def summarize(rows: list[dict]) -> dict:
                            "model/task equality or task correctness was independently verified."),
         "complete_pairs": len(pairs),
         "unmatched_trials": unmatched,
-        "pairs_missing_comparability_metadata": sum(
-            not all(c.get(k) and s.get(k) for k in ("model", "task_revision", "repository_sha"))
-            for _, c, s in pairs),
+        "excluded_noncomparable_pairs": excluded,
+        "pairs_missing_comparability_metadata": len(excluded),
         "success": {
             "control": sum(c["success"] for _, c, _ in pairs),
             "sbs": sum(s["success"] for _, _, s in pairs),
