@@ -29,7 +29,9 @@ class HookTests(unittest.TestCase):
                     "rg file | sh", "git status $(touch /tmp/evil)", "ls > file",
                     "git -c alias.x=status x", "rg --pre=curl foo",
                     "/tmp/ls -la", "./rg TODO .", "/opt/tools/git status",
-                    "git diff --textconv", "git show --output=/tmp/result"):
+                    "git diff --textconv", "git show --output=/tmp/result",
+                    "rg password /etc", "rg pattern ../private", "ls -la /",
+                    "grep token ~/secrets", "git show ../../private"):
             self.assertFalse(safe_read_command(cmd), cmd)
 
     def test_claude_replacement_only_safe_big_stdout(self):

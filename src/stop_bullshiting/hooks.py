@@ -38,6 +38,10 @@ def safe_read_command(command: str) -> bool:
         return False
     if not parts or any("\n" in part or "\r" in part for part in parts):
         return False
+    # A Codex hook's 'allow' also grants permission. Do not auto-approve
+    # filesystem reads outside the local tree, even for read-only programs.
+    if any(part.startswith(("/", "~")) or ".." in Path(part).parts for part in parts[1:]):
+        return False
     # Do not auto-approve arbitrary executables just because they are named ls or git.
     # Only bare command names can enter this conservative allowlist.
     first = parts[0]
