@@ -1,5 +1,7 @@
 import json
 import os
+import sqlite3
+import time
 import tempfile
 import unittest
 from pathlib import Path
@@ -34,6 +36,53 @@ class CompressionTests(unittest.TestCase):
         result = compress("status ok", mode="plain")
         self.assertEqual(result.mode, "none")
         self.assertIsNone(result.receipt)
+
+    def test_private_key_and_credentials_are_never_stored(self):
+        cases = (
+            "-----BEGIN PRIVATE KEY-----\nexample\n-----END PRIVATE KEY-----",
+            "Authorization: Bearer " + "a" * 42,
+            '{"access_token":"' + "b" * 42 + '"}',
+        )
+        for secret in cases:
+            with self.subTest(secret=secret[:28]):
+                original = "INFO startup\n" * 200 + secret + "\n" + "INFO complete\n" * 200
+                item = compress(original, mode="logs", minimum=0)
+                self.assertEqual(item.text, original)
+                self.assertIsNone(item.receipt)
+        self.assertEqual(report()["receipts"], 0)
+
+    def test_opt_in_receipt_retention_preserves_notes(self):
+        body = "INFO repeated line\n" * 600
+        old = compress(body, mode="logs", minimum=0, max_len=1000)
+        self.assertIsNotNone(old.receipt)
+        note_put("project", "keep", "notes are not receipts")
+        dbpath = Path(self.temp.name) / "store.sqlite3"
+        with sqlite3.connect(dbpath) as con:
+            con.execute("UPDATE receipts SET timestamp = ? WHERE id = ?",
+                        (int(time.time()) - 10 * 86400, old.receipt))
+        # Without opt-in, nothing is removed, even an old receipt.
+        self.assertEqual(get_receipt(old.receipt), body)
+        with patch.dict(os.environ, {"SBS_RECEIPT_RETENTION_DAYS": "7"}):
+            self.assertIsNone(get_receipt(old.receipt))
+            self.assertEqual(report()["receipts"], 0)
+            self.assertEqual(note_get("project", "keep"), "notes are not receipts")
+
+    def test_invalid_retention_does_not_modify_store(self):
+        body = "INFO entry\n" * 400
+        saved = compress(body, mode="logs", minimum=0, max_len=1000)
+        with patch.dict(os.environ, {"SBS_RECEIPT_RETENTION_DAYS": "-1"}):
+            with self.assertRaises(ValueError):
+                get_receipt(saved.receipt)
+        self.assertEqual(get_receipt(saved.receipt), body)
+
+    def test_symlinked_store_rejected_without_touching_target(self):
+        target = Path(self.temp.name) / "other.sqlite3"
+        target.write_bytes(b"private unrelated content")
+        dbpath = Path(self.temp.name) / "store.sqlite3"
+        dbpath.symlink_to(target)
+        with self.assertRaises(ValueError):
+            report()
+        self.assertEqual(target.read_bytes(), b"private unrelated content")
 
     def test_no_store(self):
         original = "\n".join("INFO message row " + str(i) for i in range(200))

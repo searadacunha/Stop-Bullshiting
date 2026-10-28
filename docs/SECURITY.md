@@ -17,3 +17,27 @@ Default state directory: `~/.local/state/stop-bullshiting/`. Override with `SBS_
 ## Reporting vulnerabilities
 
 Open a GitHub issue with a minimal reproduction that does not expose credentials. Do not include sensitive logs or private files.
+
+
+## Receipts, secrets and retention
+
+SBS stores complete original command outputs in a local SQLite database when a
+preview is generated; the database is **not encrypted**. Do not use a personal
+store for corporate secrets, and do not treat the heuristics as a complete
+credential detector. Recognizable private-key blocks, HTTP Authorization
+headers and credential fields bypass compression, so SBS does not create an
+additional receipt containing them. The original command output is still
+visible to the agent; this feature is **not** a redaction or DLP control.
+
+By default SBS does **not** delete pre-existing receipts: preserving existing
+user data takes priority. To opt in to automatic expiration, set
+`SBS_RECEIPT_RETENTION_DAYS=7` (supported values 1–3650). On subsequent
+storage access, receipt rows older than the selected period are deleted.
+Project notes are not subject to this TTL. Use `sbs purge --older-than-days N`
+to request deletion manually, and use an encrypted filesystem or the
+operating system's storage protections for sensitive local data.
+
+
+## MCP input framing
+
+The stdio MCP server caps each newline-delimited input frame at 2 MiB **during reading**, not just after buffering the full line. Oversized frames are drained in bounded chunks and discarded, allowing a later valid request to be handled. A regression test sends an oversized frame followed by `ping`. This is a local memory-bound protection; it does not provide network-level authentication or a full protocol fuzzing guarantee.

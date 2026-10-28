@@ -1,5 +1,7 @@
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -80,6 +82,21 @@ class McpTests(unittest.TestCase):
         self.assertTrue(reply["isError"])
         self.assertIn("DatabaseError", reply["content"][0]["text"])
 
+
+    def test_oversized_json_frame_is_dropped_without_losing_next_message(self):
+        from stop_bullshiting.mcp import MAX_MESSAGE
+        # Deliberately send one giant line followed by a valid ping. The MCP
+        # reader must discard only that frame and keep stdout protocol-only.
+        giant = b'{"text":"' + b"x" * (MAX_MESSAGE + 257) + b'"}\n'
+        ping = b'{"jsonrpc":"2.0","method":"ping","id":7}\n'
+        result = subprocess.run(
+            [sys.executable, "-m", "stop_bullshiting", "mcp"],
+            input=giant + ping, capture_output=True, timeout=12, env=os.environ.copy())
+        self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+        lines = result.stdout.decode().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(json.loads(lines[0])["id"], 7)
+        self.assertIn("Oversized message discarded", result.stderr.decode())
 
     def test_mcp_files_and_notes_are_confined_to_workspace(self):
         root = Path(self.temp.name)
