@@ -27,9 +27,9 @@ IMPORTANT = re.compile(
 # An uncertain match is deliberately left byte-for-byte unchanged.
 SENSITIVE = re.compile(
     r"(?im)(?:-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----"
-    r"|\\bauthorization\\s*:\\s*(?:bearer|basic)\\s+\\S{12,}"
-    r"|[\\\"']?(?:x-api-key|api[_-]?key|access[_-]?token|refresh[_-]?token|"
-    r"client[_-]?secret|password)[\\\"']?\\s*[:=]\\s*[\\\"']?[A-Za-z0-9._~/+=-]{16,})"
+    r"|\bauthorization\s*:\s*(?:bearer|basic)\s+\S{12,}"
+    r"|[\"']?(?:x-api-key|api[_-]?key|access[_-]?token|refresh[_-]?token|"
+    r"client[_-]?secret|password)[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9._~/+=-]{16,})"
 )
 
 JSON_KEEP = {"error", "errors", "warning", "warnings", "failed", "failures",
