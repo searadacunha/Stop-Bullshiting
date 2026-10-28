@@ -22,6 +22,16 @@ IMPORTANT = re.compile(
     r"assertion|passed|summary|total|collected|permission denied|not found|"
     r"no such file|exit code)\b|\bE\s+\w+Error\b|^\s*\[fail\])"
 )
+# Avoid creating another local copy of recognizable credentials. This is not a
+# general secret scanner and does NOT redact the command output sent to the agent.
+# An uncertain match is deliberately left byte-for-byte unchanged.
+SENSITIVE = re.compile(
+    r"(?im)(?:-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----"
+    r"|\\bauthorization\\s*:\\s*(?:bearer|basic)\\s+\\S{12,}"
+    r"|[\\\"']?(?:x-api-key|api[_-]?key|access[_-]?token|refresh[_-]?token|"
+    r"client[_-]?secret|password)[\\\"']?\\s*[:=]\\s*[\\\"']?[A-Za-z0-9._~/+=-]{16,})"
+)
+
 JSON_KEEP = {"error", "errors", "warning", "warnings", "failed", "failures",
              "status", "summary", "message", "traceback", "exception", "tests",
              "count", "total", "path", "exit_code", "success", "name", "id"}
@@ -303,6 +313,10 @@ def compress(text: str, *, mode: str = "auto", max_len: int | None = None,
     """
     if mode not in ("auto", "json", "logs", "diff", "code", "csv", "plain"):
         raise ValueError(f"Unsupported mode {mode!r}")
+    # Do not persist recognizable secret material in reversible local receipts.
+    # Passing through also avoids removing diagnostic context during reduction.
+    if SENSITIVE.search(text):
+        return Compression(text, "none", len(text), len(text))
     maximum = default_max_chars() if max_len is None else max(300, max_len)
     threshold = default_min_chars() if minimum is None else max(0, minimum)
     if len(text) <= threshold or len(text) <= maximum:
