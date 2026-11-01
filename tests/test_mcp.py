@@ -130,6 +130,45 @@ class McpTests(unittest.TestCase):
             hit = invoke("sbs_search", {"query": "DO_NOT_READ", "path": "."})
             self.assertFalse(hit["isError"])
             self.assertNotIn("DO_NOT_READ", hit["content"][0]["text"])
+    def test_error_codes_follow_json_rpc(self):
+        self.assertEqual(dispatch({"id": 1, "method": "no/such"})["error"]["code"], -32601)
+        self.assertEqual(dispatch({"id": 2, "method": "tools/call", "params": "bad"})["error"]["code"], -32602)
+        self.assertTrue(dispatch({"id": 3, "method": "tools/call",
+                                  "params": {"name": "nope", "arguments": {}}})["result"]["isError"])
+
+    def test_unknown_protocol_gets_the_newest_supported_version(self):
+        reply = dispatch({"id": 1, "method": "initialize", "params": {"protocolVersion": "1999-01-01"}})
+        self.assertEqual(reply["result"]["protocolVersion"], "2025-11-25")
+
+    def test_read_only_tools_are_annotated(self):
+        tools = {tool["name"]: tool for tool in dispatch({"id": 1, "method": "tools/list"})["result"]["tools"]}
+        self.assertTrue(tools["sbs_read"]["annotations"]["readOnlyHint"])
+        self.assertFalse(tools["sbs_compact"]["annotations"]["readOnlyHint"])
+        self.assertFalse(tools["sbs_note_save"]["annotations"]["readOnlyHint"])
+
+    def test_code_tools_stay_inside_the_workspace(self):
+        with tempfile.TemporaryDirectory() as raw, patch.dict(os.environ, {"SBS_WORKSPACE": raw, "SBS_HOME": raw + "/s"}):
+            root = Path(raw)
+            (root / "lib.ts").write_text("export function target(a: string) {\n  return a;\n}\n")
+            (root / "use.py").write_text("from lib import target\ntarget('x')\n")
+            call = lambda tool, **args: invoke(tool, args)
+            self.assertIn("lib.ts:1-3 function target", call("sbs_definition", name="target")["content"][0]["text"])
+            self.assertIn("return a;", call("sbs_symbol_source", name="target")["content"][0]["text"])
+            self.assertIn("use.py:2", call("sbs_references", name="target")["content"][0]["text"])
+            self.assertIn("lib.ts", call("sbs_repo_map")["content"][0]["text"])
+            for tool in ("sbs_definition", "sbs_references", "sbs_symbol_source"):
+                self.assertTrue(call(tool, name="target", path="/etc")["isError"], tool)
+            self.assertTrue(call("sbs_repo_map", path="../")["isError"])
+            self.assertTrue(call("sbs_repo_map", budget=5)["isError"])
+
+    def test_parse_error_gets_a_reply_and_the_server_continues(self):
+        script = ("import sys; from stop_bullshiting.mcp import serve; serve()")
+        proc = subprocess.run([sys.executable, "-c", script], input=b'not json\n{"id":7,"method":"ping"}\n',
+                              capture_output=True, env={**os.environ, "PYTHONPATH": "src"})
+        replies = [json.loads(line) for line in proc.stdout.splitlines()]
+        self.assertEqual(replies[0]["error"]["code"], -32700)
+        self.assertEqual(replies[1]["id"], 7)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,12 +7,17 @@ import os
 import re
 import shlex
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .compress import compress
+from .config import min_chars
+from .store import count_event
 
 HOOK_MATCHER = "Bash"
+# Not Read: Claude Code numbers the replacement from 1, so a preview would give a
+# model wrong line numbers for the file. A real session reported line 3 for line 501.
+CLAUDE_MATCHER = "Bash|Grep"
 SBS_MARKER = "stop_bullshiting hook"
 SHELL_START = "# >>> STOP-BULLSHITING >>>"
 SHELL_END = "# <<< STOP-BULLSHITING <<<"
@@ -32,6 +37,9 @@ def safe_read_command(command: str) -> bool:
         return False
     if re.search(r"[\x00\r;|&><`$(){}\\]", command):
         return False
+    # The wrapper runs without a shell, so globs and comments would change meaning.
+    if re.search(r"[*?\[\]!#~]|(?:^|\s)=", command):
+        return False
     try:
         parts = shlex.split(command)
     except ValueError:
@@ -50,7 +58,7 @@ def safe_read_command(command: str) -> bool:
             arg.startswith(("--output", "-o")) or arg in ("--ext-diff", "--textconv") for arg in parts[2:])
     if first in {"rg", "grep"}:
         return not any(arg in ("--pre", "--pre-glob", "-P", "--passthru")
-                       or arg.startswith("--pre=") or arg.startswith("--pre-glob=") for arg in parts[1:])
+                       or arg.startswith(("--pre=", "--pre-glob=", "--hostname-bin")) for arg in parts[1:])
     if first == "ls":
         return True
     return False
@@ -64,38 +72,91 @@ def _decoded_event(raw: str) -> dict:
         return {}
 
 
+def _claude_payload(tool: str, tool_input: dict, response: dict):
+    """Return (text, rebuild, command) for a replaceable result, else None.
+
+    Shapes were captured from real tool responses; the replacement must match them.
+    """
+    if tool == "Bash":
+        stdout = response.get("stdout")
+        if (not isinstance(stdout, str) or "\x00" in stdout or response.get("interrupted")
+                or response.get("isImage") or not isinstance(response.get("stderr", ""), str)):
+            return None
+        if any(response[key] != 0 for key in ("exitCode", "exit_code", "returncode") if key in response):
+            return None
+        command = tool_input.get("command", "")
+
+        def rebuild(text: str) -> dict:
+            # Claude requires a tool-appropriate shape. Preserve all original flags.
+            replacement = dict(response)
+            replacement["stdout"] = text
+            replacement.setdefault("stderr", "")
+            replacement.setdefault("interrupted", False)
+            replacement.setdefault("isImage", False)
+            return replacement
+
+        return stdout, rebuild, command
+    if tool == "Grep":
+        content = response.get("content")
+        if response.get("mode") != "content" or not isinstance(content, str):
+            return None
+        return content, lambda text: {**response, "content": text}, "grep"
+    return None
+
+
 def claude_post_hook(raw: str) -> str:
     event = _decoded_event(raw)
-    if event.get("tool_name") != "Bash" or event.get("hook_event_name") != "PostToolUse":
+    tool = event.get("tool_name")
+    if event.get("hook_event_name") != "PostToolUse" or tool not in ("Bash", "Grep"):
         return ""
     tool_input = event.get("tool_input") or {}
     response = event.get("tool_response") or {}
     if not isinstance(tool_input, dict) or not isinstance(response, dict):
         return ""
-    command = tool_input.get("command", "")
-    if not safe_read_command(command) and os.environ.get("SBS_COMPRESS_ALL") != "1":
-        return ""
-    stdout = response.get("stdout")
-    if not isinstance(stdout, str) or "\x00" in stdout or response.get("interrupted") or response.get("isImage"):
-        return ""
-    if any(response[key] != 0 for key in ("exitCode", "exit_code", "returncode") if key in response):
-        return ""
-    if not isinstance(response.get("stderr", ""), str):
-        return ""
+    source = f"claude:{tool}"
+    started = time.perf_counter()
     try:
-        result = compress(stdout, source="claude:Bash")
+        payload = _claude_payload(tool, tool_input, response)
+        if payload is None:
+            count_event(source, "not_eligible", micros=int((time.perf_counter() - started) * 1e6))
+            return ""
+        text, rebuild, command = payload
+        if len(text) <= min_chars():
+            count_event(source, "unchanged", len(text), len(text), int((time.perf_counter() - started) * 1e6))
+            return ""
+        from .compress import compress  # only large outputs pay for this import
+        # Trials showed agents rarely fetch omitted lines back, so no head/tail previews here:
+        # recognized commands get their view, allowlisted ones lose only repeats and spacing.
+        everything = os.environ.get("SBS_COMPRESS_ALL") == "1"
+        result = compress(text, source=source, command=command, generic=everything,
+                          cleanup=everything or (tool == "Bash" and safe_read_command(command)))
     except Exception:
         return ""  # hooks must fail open, never interfere with the agent
+    micros = int((time.perf_counter() - started) * 1e6)
+    count_event(source, "reduced" if result.receipt else "unchanged", len(text), len(result.text), micros)
     if not result.receipt:
         return ""
-    replacement = dict(response)
-    replacement["stdout"] = result.text
-    # Claude requires a tool-appropriate shape. Preserve all original flags.
-    replacement.setdefault("stderr", "")
-    replacement.setdefault("interrupted", False)
-    replacement.setdefault("isImage", False)
     return json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse",
-                                                    "updatedToolOutput": replacement}}, ensure_ascii=False)
+                                                    "updatedToolOutput": rebuild(result.text)}}, ensure_ascii=False)
+
+
+def _codex_rule_applies(program: str, cwd) -> bool:
+    """True when an exec-policy rule may mention this program, or when that cannot be ruled out.
+
+    Codex checks its rules against the rewritten command, so wrapping a command would
+    hide it from a rule written for the original. Such a command is left to Codex.
+    """
+    home = Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex")
+    folders = [home / "rules"] + ([Path(cwd) / ".codex" / "rules"] if isinstance(cwd, str) and cwd else [])
+    try:
+        for folder in folders:
+            for file in folder.glob("*.rules"):
+                text = file.read_text(encoding="utf-8", errors="replace")
+                if f'"{program}"' in text or f"'{program}'" in text:
+                    return True
+    except OSError:
+        return True
+    return False
 
 
 def codex_pre_hook(raw: str) -> str:
@@ -107,6 +168,8 @@ def codex_pre_hook(raw: str) -> str:
         return ""
     command = tool_input.get("command", "")
     if not safe_read_command(command) or command.strip().startswith("sbs "):
+        return ""
+    if _codex_rule_applies(shlex.split(command)[0], event.get("cwd")):
         return ""
     # Quote original command as one argument, so no extra shell operators appear.
     # Preserve the original tool_input fields (e.g. timeout and workdir).
@@ -147,8 +210,27 @@ def _save_with_backup(path: Path, content: str) -> str:
     return f"updated: {path} (existing file backed up)"
 
 
+def run_hook(agent: str, raw: str) -> str:
+    """Answer one hook event. Any failure means no answer: a hook error must not reach the tool."""
+    try:
+        return claude_post_hook(raw) if agent == "claude" else codex_pre_hook(raw)
+    except Exception:
+        return ""
+
+
+def hook_main(agent: str) -> int:
+    """Process entry point for one hook event. Exit 2 would block a tool or replace its result."""
+    try:
+        reply = run_hook(agent, sys.stdin.buffer.read().decode("utf-8", "replace"))
+        if reply:
+            sys.stdout.write(reply + "\n")
+    except Exception:
+        pass
+    return 0
+
+
 def _hook_definition(agent: str) -> dict:
-    return {"matcher": HOOK_MATCHER, "hooks": [
+    return {"matcher": CLAUDE_MATCHER if agent == "claude" else HOOK_MATCHER, "hooks": [
         {"type": "command", "command": _hook_command(agent), "timeout": 10}
     ]}
 

@@ -15,12 +15,17 @@ from pathlib import Path
 from . import __version__
 from .compress import compress
 from .receipts import select_receipt
+from .repomap import ranked_map
+from .search import find as find_receipts, render as render_receipts
 from .store import get_receipt, note_get, note_list, note_put
-from .symbols import excerpt, search, symbol_map
+from .symbols import definitions, excerpt, references, search, symbol_map, symbol_source
 
 SERVER = "stop-bullshiting"
-PROTOCOL = "2025-03-26"
+PROTOCOL = "2025-11-25"
+VERSIONS = ("2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25")
 MAX_MESSAGE = 2 * 1024 * 1024
+READ_ONLY = {"sbs_restore", "sbs_symbols", "sbs_search", "sbs_read", "sbs_note_find", "sbs_find",
+             "sbs_definition", "sbs_references", "sbs_symbol_source", "sbs_repo_map"}
 
 
 def _workspace_path(raw: str) -> Path:
@@ -47,7 +52,7 @@ def _workspace_path(raw: str) -> Path:
 def _tool(name: str, description: str, properties: dict, required: list[str] | None = None) -> dict:
     return {"name": name, "description": description, "inputSchema": {
         "type": "object", "properties": properties, "required": required or [],
-        "additionalProperties": False}}
+        "additionalProperties": False}, "annotations": {"readOnlyHint": name in READ_ONLY}}
 
 
 TOOLS = [
@@ -63,8 +68,20 @@ TOOLS = [
                        "description": "Neighboring lines around each match, clipped to the requested range."},
            "limit": {"type": "integer", "minimum": 1, "default": 50,
                      "description": "Maximum selected source lines to consider, including oversized lines."}}, ["receipt"]),
-    _tool("sbs_symbols", "Locate Python classes, functions and precise line ranges without reading entire files.",
+    _tool("sbs_find", "Rank exact passages across recent stored originals for a few words, without restoring them whole.",
+          {"query": {"type": "string", "minLength": 1},
+           "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 5}}, ["query"]),
+    _tool("sbs_symbols", "Locate Python, JavaScript and TypeScript declarations with precise line ranges without reading entire files.",
           {"path": {"type": "string"}, "name": {"type": "string"}}, []),
+    _tool("sbs_definition", "Find where a Python, JavaScript or TypeScript symbol is declared.",
+          {"name": {"type": "string", "minLength": 1}, "path": {"type": "string"}}, ["name"]),
+    _tool("sbs_references", "List lines using an identifier. Matches by name without resolving scope, so verify each one.",
+          {"name": {"type": "string", "minLength": 1}, "path": {"type": "string"}}, ["name"]),
+    _tool("sbs_symbol_source", "Return the exact numbered source of a declaration without reading its whole file.",
+          {"name": {"type": "string", "minLength": 1}, "path": {"type": "string"}}, ["name"]),
+    _tool("sbs_repo_map", "Outline the most depended-on files and symbols within a character budget.",
+          {"path": {"type": "string"}, "budget": {"type": "integer", "minimum": 200, "maximum": 20000, "default": 4000},
+           "focus": {"type": "array", "items": {"type": "string"}}}, []),
     _tool("sbs_search", "Search files for a literal phrase and return bounded matching lines.",
           {"query": {"type": "string"}, "path": {"type": "string"}}, ["query"]),
     _tool("sbs_read", "Read exact numbered lines without altering source code.",
@@ -99,6 +116,28 @@ def invoke(name: str, args: dict) -> dict:
             if selection or len(data) > 20000:
                 return _text(select_receipt(data, **selection, max_chars=20000))
             return _text(data)
+        if name == "sbs_find":
+            limit = args.get("limit", 5)
+            if type(limit) is not int or not 1 <= limit <= 20:
+                raise ValueError("limit must be an integer from 1 to 20")
+            return _text(render_receipts(find_receipts(args["query"], limit=limit)))
+        if name == "sbs_definition":
+            found = definitions(args["name"], _workspace_path(args.get("path", ".")))
+            return _text("\n".join(f"{item['path']}:{item['line']}-{item['end']} {item['kind']} {item['name']}"
+                                   for item in found))
+        if name == "sbs_references":
+            found = references(args["name"], _workspace_path(args.get("path", ".")))
+            return _text("[name matches, scope not resolved]\n" + "\n".join(found) if found else "")
+        if name == "sbs_symbol_source":
+            return _text(symbol_source(args["name"], _workspace_path(args.get("path", "."))))
+        if name == "sbs_repo_map":
+            budget = args.get("budget", 4000)
+            focus = args.get("focus", [])
+            if type(budget) is not int or not 200 <= budget <= 20000:
+                raise ValueError("budget must be an integer from 200 to 20000")
+            if not isinstance(focus, list) or not all(isinstance(item, str) for item in focus):
+                raise ValueError("focus must be a list of strings")
+            return _text(ranked_map(_workspace_path(args.get("path", ".")), budget=budget, focus=tuple(focus)))
         if name == "sbs_symbols":
             return _text("\n".join(symbol_map(_workspace_path(args.get("path", ".")),
                                                name_filter=args.get("name", ""))))
@@ -131,7 +170,7 @@ def dispatch(request: dict) -> dict | None:
             params = request.get("params") or {}
             # Protocol versions are negotiated, not ignored.
             requested = params.get("protocolVersion", PROTOCOL)
-            version = requested if requested in ("2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25") else PROTOCOL
+            version = requested if requested in VERSIONS else PROTOCOL
             result = {"protocolVersion": version, "capabilities": {"tools": {"listChanged": False}},
                       "serverInfo": {"name": SERVER, "version": __version__}}
         elif method == "ping":
@@ -142,10 +181,12 @@ def dispatch(request: dict) -> dict | None:
             params = request.get("params") or {}
             result = invoke(params.get("name", ""), params.get("arguments") or {})
         else:
-            raise LookupError(f"Unknown method {method}")
+            return {"jsonrpc": "2.0", "id": ident, "error": {"code": -32601, "message": f"Unknown method {method}"}}
         return {"jsonrpc": "2.0", "id": ident, "result": result}
+    except (TypeError, ValueError, AttributeError) as exc:
+        return {"jsonrpc": "2.0", "id": ident, "error": {"code": -32602, "message": str(exc)}}
     except Exception as exc:
-        return {"jsonrpc": "2.0", "id": ident, "error": {"code": -32601, "message": str(exc)}}
+        return {"jsonrpc": "2.0", "id": ident, "error": {"code": -32603, "message": str(exc)}}
 
 
 def serve() -> int:
@@ -176,4 +217,7 @@ def serve() -> int:
                 sys.stdout.flush()
         except (ValueError, UnicodeError) as exc:
             sys.stderr.write(f"[SBS MCP] Invalid JSON input: {exc}\n")
+            reply = {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}}
+            sys.stdout.write(json.dumps(reply) + "\n")
+            sys.stdout.flush()
     return 0
