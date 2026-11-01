@@ -62,7 +62,7 @@ Run this from **any directory**. It downloads the [installer](scripts/install_ma
 )
 ```
 
-The installer installs or repairs **version 0.2.0**, pinned to commit `b5d6681`, with the optional token counter in `~/.local/share/stop-bullshiting/venv`. No clone, Homebrew, `pipx` or `sudo` is needed. It adds the executable directory to your zsh `PATH`, backs up an existing shell configuration before changing it, and refreshes only SBS integrations you already enabled. It finishes by printing the version and running a benchmark with the built-in sample. Its first tokenizer use may download a public vocabulary table; benchmark text is not uploaded.
+The installer installs or repairs **version 0.3.0**, pinned to commit `5208df7`, with the optional token counter in `~/.local/share/stop-bullshiting/venv`. No clone, Homebrew, `pipx` or `sudo` is needed. It adds the executable directory to your zsh `PATH`, backs up an existing shell configuration before changing it, and refreshes only SBS integrations you already enabled. It finishes by printing the version and running a benchmark with the built-in sample. Its first tokenizer use may download a public vocabulary table; benchmark text is not uploaded.
 
 Then open a **new terminal** before using `sbs`, Claude Code or Codex. If an existing Codex hook was refreshed, review it with `/hooks` inside Codex. Check the installation with:
 
@@ -71,7 +71,7 @@ sbs --version
 sbs bench --tokenizer o200k_base
 ```
 
-To update an older installation to 0.2.0 or repair this installation, rerun the same installer commands and open a new terminal. This installer is pinned to 0.2.0; it does not promise a future latest version. `sbs` and `stop-bullshiting` are equivalent commands.
+To update an older installation to 0.3.0 or repair this installation, rerun the same installer commands and open a new terminal. If you enabled the Claude or Codex hook, it is refreshed; review Codex hooks again with `/hooks`. This installer is pinned to 0.3.0; it does not promise a future latest version. `sbs` and `stop-bullshiting` are equivalent commands.
 
 ### macOS (alternative: pipx)
 
@@ -335,7 +335,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/INTEGRATIONS.md](docs/IN
 |:--|:--|
 | `sbs: command not found` | After the macOS installer, open a new terminal; its executable is `~/.local/share/stop-bullshiting/venv/bin/sbs`. For pipx, check `pipx list` and run `pipx ensurepath`; for a clone, use `.venv/bin/sbs`. |
 | `pipx: command not found` | Use the macOS installer above; it does not need pipx. Install pipx with Homebrew only if you choose the alternative method. |
-| `unrecognized arguments: --tokenizer` | Check `sbs --version` and `command -v sbs`: an older installation may be selected. Rerun the macOS installer to install or repair 0.2.0, then open a new terminal. |
+| `unrecognized arguments: --tokenizer` | Check `sbs --version` and `command -v sbs`: an older installation may be selected. Rerun the macOS installer to install or repair 0.3.0, then open a new terminal. |
 | `zsh: command not found: #` | Interactive zsh may treat pasted comments as commands. Copy only the command blocks; the explanations are outside them. |
 | A shell parse error or an unknown receipt ID | Do not paste angle-bracket placeholders or illustrative IDs. Copy the complete restoration command printed by your own SBS output. |
 | Editable installation reports that `.` is not installable | Run it from the root of the cloned repository containing `pyproject.toml`. The macOS installer works from any directory and needs no clone. |

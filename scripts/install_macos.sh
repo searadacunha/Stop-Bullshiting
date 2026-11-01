@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install or repair the reviewed SBS 0.2.0 release without pipx or sudo.
+# Install or repair the reviewed SBS 0.3.0 release without pipx or sudo.
 # Existing SBS integrations are refreshed; new integrations remain opt-in.
 set -eu
 SBS_ENV="$HOME/.local/share/stop-bullshiting/venv"
@@ -22,7 +22,7 @@ if [ ! -x "$SBS_ENV/bin/python" ]; then
   exit 1
 fi
 "$SBS_ENV/bin/python" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) and sys.prefix != sys.base_prefix else "Environnement SBS invalide : un venv Python 3.10+ est nécessaire.")'
-"$SBS_ENV/bin/python" -m pip install --upgrade 'stop-bullshiting[tokens] @ https://github.com/searadacunha/Stop-Bullshiting/archive/b5d66813fc71df6768bb03404312ceb233f0d508.zip'
+"$SBS_ENV/bin/python" -m pip install --upgrade 'stop-bullshiting[tokens] @ https://github.com/searadacunha/Stop-Bullshiting/archive/5208df7d8ec9dbead64363472a254a0f010834ce.zip'
 "$SBS_ENV/bin/python" - <<'PY'
 from pathlib import Path
 from datetime import datetime
@@ -30,8 +30,8 @@ import json, os, shutil
 from stop_bullshiting import __version__
 from stop_bullshiting.hooks import setup_agent, setup_shell, SHELL_START, SHELL_END
 
-if __version__ != "0.2.0":
-    raise SystemExit("La version attendue 0.2.0 n'a pas été installée.")
+if __version__ != "0.3.0":
+    raise SystemExit("La version attendue 0.3.0 n'a pas été installée.")
 root = Path.home()
 shell_root = Path(os.environ.get("ZDOTDIR") or root)
 rc = shell_root / ".zshrc"
