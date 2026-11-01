@@ -35,15 +35,32 @@ CREATE TABLE IF NOT EXISTS notes (
 """
 
 
+def _retention_cutoff() -> int | None:
+    """Opt-in receipt TTL; no existing data is deleted without configuration."""
+    raw = os.environ.get("SBS_RECEIPT_RETENTION_DAYS")
+    if raw is None or raw == "":
+        return None
+    if not raw.isdecimal() or not 1 <= int(raw) <= 3650:
+        raise ValueError("SBS_RECEIPT_RETENTION_DAYS must be an integer from 1 to 3650")
+    return int(time.time()) - int(raw) * 86400
+
+
 @contextmanager
 def db() -> Iterator[sqlite3.Connection]:
+    # Check configuration before creating any file or modifying existing data.
+    cutoff = _retention_cutoff()
     directory = ensure_private_dir(home())
     target = directory / "store.sqlite3"
+    if target.is_symlink():
+        raise ValueError("Refusing a symlinked SQLite store")
     conn = sqlite3.connect(str(target), timeout=10)
     if os.name == "posix":
         os.chmod(target, 0o600)
     conn.executescript(SCHEMA)
     try:
+        if cutoff is not None:
+            # Receipts only: project notes are deliberately not expired.
+            conn.execute("DELETE FROM receipts WHERE timestamp < ?", (cutoff,))
         yield conn
         conn.commit()
     except BaseException:
