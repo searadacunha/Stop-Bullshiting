@@ -36,3 +36,8 @@ storage access, receipt rows older than the selected period are deleted.
 Project notes are not subject to this TTL. Use `sbs purge --older-than-days N`
 to request deletion manually, and use an encrypted filesystem or the
 operating system's storage protections for sensitive local data.
+
+
+## MCP input framing
+
+The stdio MCP server caps each newline-delimited input frame at 2 MiB **during reading**, not just after buffering the full line. Oversized frames are drained in bounded chunks and discarded, allowing a later valid request to be handled. A regression test sends an oversized frame followed by `ping`. This is a local memory-bound protection; it does not provide network-level authentication or a full protocol fuzzing guarantee.

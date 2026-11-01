@@ -150,8 +150,20 @@ def dispatch(request: dict) -> dict | None:
 
 def serve() -> int:
     """Pure newline-delimited JSON-RPC. Keep stdout protocol-only."""
-    for raw in sys.stdin.buffer:
+    stream = sys.stdin.buffer
+    while True:
+        # A plain "for raw in stream" allocates the ENTIRE newline-delimited
+        # message before checking its length. Bound the read, then drain an
+        # oversized frame in fixed-size chunks without storing its contents.
+        raw = stream.readline(MAX_MESSAGE + 1)
+        if not raw:
+            break
         if len(raw) > MAX_MESSAGE:
+            if not raw.endswith(b"\n"):
+                while True:
+                    tail = stream.readline(65536)
+                    if not tail or tail.endswith(b"\n"):
+                        break
             sys.stderr.write("[SBS MCP] Oversized message discarded\n")
             continue
         try:
