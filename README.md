@@ -346,3 +346,8 @@ Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+
+## Real coding-task benchmark status
+
+The repository includes an offline **paired-session analysis tool** in `scripts/paired_sessions.py` and a [measurement protocol](docs/PAIRED_SESSIONS.md). It accepts recorded control/SBS task runs with provider tokens, costs, tool calls, restores, elapsed time, success and errors. **No paid agent-task comparisons have yet been run or claimed**; synthetic compression benchmarks are not evidence of end-to-end gains.
