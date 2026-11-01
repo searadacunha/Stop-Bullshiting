@@ -59,7 +59,8 @@ class SymbolsAndCliTests(unittest.TestCase):
         self.assertIn("command diagnostic", result.stderr)
 
     def test_literal_search_case_is_consistent_without_rg(self):
-        file = self.path / "example.py"
+        # search() resolves paths, and macOS temporary paths are symlinks.
+        file = self.path.resolve() / "example.py"
         file.write_text("Needle\nneedle\n")
         with patch("stop_bullshiting.symbols.shutil.which", return_value=None):
             self.assertEqual(search("Needle", file), [f"{file}:1:Needle"])
