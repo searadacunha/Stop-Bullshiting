@@ -21,6 +21,7 @@ from contextlib import redirect_stdout
 from dataclasses import dataclass
 import hashlib
 import importlib
+import inspect
 import io
 import json
 import os
@@ -42,6 +43,7 @@ class Case:
     text: str
     sentinels: dict[str, str]
     expect_unchanged: bool = False
+    command: str | None = None
 
 
 def cases() -> list[Case]:
@@ -115,6 +117,57 @@ def cases() -> list[Case]:
     ]
 
 
+def command_cases() -> list[Case]:
+    """Plain tool output, each with facts a reader must still see and a stated producer."""
+    passing = [f"tests/test_mod_{i % 9}.py::test_case_{i} PASSED [{i * 100 // 400:3d}%]" for i in range(400)]
+    git_log = "".join(
+        f"commit {i:040x}\nAuthor: Dev {i % 4} <dev{i % 4}@example.com>\nDate:   Mon Oct 26 12:{i % 60:02d}:00 2026 +0000\n\n"
+        f"    Change number {i}\n\n    Body line one of change {i}\n    Signed-off-by: Dev {i % 4}\n\n"
+        for i in range(120))
+    untracked = "".join(f"\tdata/raw/export_{i}.csv\n" for i in range(300))
+    status = ('On branch main\nChanges not staged for commit:\n  (use "git add <file>..." to update what will be committed)\n'
+              '  (use "git restore <file>..." to discard changes in working directory)\n\tmodified:   src/settlement/core.py\n\n'
+              f'Untracked files:\n  (use "git add <file>..." to include in what will be committed)\n{untracked}\n'
+              'no changes added to commit (use "git add" and/or "git commit -a")\n')
+    search = "".join(f"src/services/payments/internal/module_{i % 12}.py:{i + 1}:    value = lookup_rate({i})\n"
+                     for i in range(500))
+    lock = "".join(f"-    \"pkg-{i}\": \"1.0.{i}\",\n+    \"pkg-{i}\": \"1.0.{i + 1}\",\n" for i in range(800))
+    diff = ("diff --git a/src/app.py b/src/app.py\nindex 1..2 100644\n--- a/src/app.py\n+++ b/src/app.py\n"
+            "@@ -1 +1 @@\n-old_rate = 1\n+old_rate = 2\n"
+            "diff --git a/package-lock.json b/package-lock.json\nindex 3..4 100644\n--- a/package-lock.json\n"
+            f"+++ b/package-lock.json\n@@ -1,800 +1,800 @@\n{lock}")
+    jest = "".join(f"  ✓ renders case {i} (2 ms)\n" for i in range(300))
+    return [
+        Case("command-pytest-verbose", "pytest -v, all passing but with a skip and a warning", "plain",
+             "\n".join(["collected 401 items"] + passing + ["tests/test_x.py::test_later SKIPPED (no database)",
+                        "tests/test_x.py:3: DeprecationWarning: old api", "===== 400 passed, 1 skipped, 1 warning in 2.31s ====="]),
+             {"summary": "400 passed, 1 skipped", "skip": "test_later SKIPPED (no database)", "warning": "DeprecationWarning: old api"},
+             command="python3 -m pytest -v"),
+        Case("command-unittest-verbose", "unittest -v, all passing but with one skip", "plain",
+             "\n".join([f"test_case_{i} (tests.test_mod.Case) ... ok" for i in range(400)]
+                       + ["test_later (tests.test_mod.Case) ... skipped 'needs db'", "", "-" * 70,
+                          "Ran 401 tests in 1.204s", "", "OK (skipped=1)"]),
+             {"summary": "Ran 401 tests", "ok": "OK (skipped=1)", "skip": "skipped 'needs db'"},
+             command="python3 -m unittest -v"),
+        Case("command-jest", "jest output with one skipped test", "plain",
+             "PASS src/app.test.js\n" + jest + "  ○ skipped later case\nTests:       1 skipped, 300 passed, 301 total\n",
+             {"summary": "1 skipped, 300 passed, 301 total", "skip": "skipped later case"}, command="npx jest"),
+        Case("command-git-log", "full git log, hash and subject of every commit", "plain",
+             git_log, {"first_hash": f"{0:040x}", "last_hash": f"{119:040x}", "first_subject": "Change number 0"},
+             command="git log"),
+        Case("command-git-status", "long untracked list around one modified file", "plain",
+             status, {"branch": "On branch main", "modified": "modified:   src/settlement/core.py", "group": "data/raw/"},
+             command="git status"),
+        Case("command-search", "many rg matches in a few deep paths", "plain",
+             search, {"file": "module_11.py", "first": "lookup_rate(0)"}, command="rg lookup_rate src"),
+        Case("command-diff-lockfile", "source hunk beside a huge lockfile hunk", "plain",
+             diff, {"source_change": "+old_rate = 2", "lockfile_named": "diff --git a/package-lock.json"}, command="git diff"),
+        Case("command-terminal-noise", "colored progress bar overwritten in place", "plain",
+             "".join(f"\x1b[32mDownloading {i}%\x1b[0m\r" for i in range(1000)) + "Saved model to /srv/models/final.bin\n",
+             {"result": "Saved model to /srv/models/final.bin"}, command="./download.sh"),
+    ]
+
+
 def sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -180,7 +233,8 @@ def run_worker(root: Path, args) -> dict:
         if not Path(compressor.__file__).resolve().is_relative_to(source_root.resolve()):
             raise RuntimeError("Imported SBS from a different checkout")
 
-        for case in cases():
+        supports_command = "command" in inspect.signature(compressor.compress).parameters
+        for case in cases() + command_cases():
             requested_mode = case.mode if args.explicit_modes else "auto"
             timings, samples, restorations, sentinel_samples = [], [], [], []
             for iteration in range(args.repeats):
@@ -189,10 +243,14 @@ def run_worker(root: Path, args) -> dict:
                 identifier = uuid.uuid5(uuid.NAMESPACE_URL,
                                        f"sbs-synthetic-benchmark-v1/{case.name}/{iteration}")
                 captured = io.StringIO()
+                # An older checkout has no command-aware views: measure what it does do.
+                # A view has no size request here, like the hook: an explicit size would cut items.
+                extra = ({"command": case.command, "max_len": None} if case.command and supports_command
+                         else {"max_len": args.max_chars})
                 with patch.object(receipts.uuid, "uuid4", return_value=identifier), redirect_stdout(captured):
                     started = time.perf_counter_ns()
-                    result = compressor.compress(case.text, mode=requested_mode, max_len=args.max_chars,
-                                                 minimum=args.min_chars, source="synthetic-benchmark", store=True)
+                    result = compressor.compress(case.text, mode=requested_mode,
+                                                 minimum=args.min_chars, source="synthetic-benchmark", store=True, **extra)
                     timings.append((time.perf_counter_ns() - started) / 1_000_000)
                 restored = receipts.get_receipt(result.receipt) if result.receipt else result.text
                 restorations.append(restored == case.text)

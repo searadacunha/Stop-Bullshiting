@@ -1,0 +1,2182 @@
+{
+ "date": "2026-11-01",
+ "machine": "MacBook Air, Apple Silicon, macOS 14",
+ "python": "3.14.8",
+ "clients": {
+  "claude_code": "2.1.316",
+  "codex": "0.166.0"
+ },
+ "baseline": "1e35c62",
+ "fidelity_fixtures": {
+  "schema_version": 1,
+  "fixture_set": "synthetic-v1",
+  "python": "3.14.8",
+  "settings": {
+   "max_chars": 3500,
+   "min_chars": 1400,
+   "min_gain": 0.12,
+   "repeats": 3,
+   "mode_policy": "auto"
+  },
+  "measurement": {
+   "receipt_ids": "Deterministic UUID5; genuine storage and final rendered markers are measured.",
+   "latency": "Local compress() wall time including receipt storage; excludes imports, token counting and restoration.",
+   "scope": "Synthetic microbenchmark; no agent tasks, remote model calls, billing or quota measured.",
+   "fidelity": "Sentinel presence and exact restoration do not establish semantic equivalence."
+  },
+  "current": {
+   "source": "<checkout>",
+   "git": {
+    "commit": "dc98a8aae0e7c356c068394f9f3febd310c48244",
+    "dirty": true
+   },
+   "tokenizer": {
+    "requested": "none",
+    "available": false,
+    "encoding": null,
+    "provider_billing_tokens": false,
+    "reason": "Token counting not requested; character counts are not tokens."
+   },
+   "cases": [
+    {
+     "name": "repetitive_logs",
+     "synthetic": true,
+     "description": "Repeated heartbeats plus varied batches and one error",
+     "input_sha256": "93b498c1de8811d6c57b421253665d908b01e010fb5c2434fb71617fe9012b75",
+     "input_chars": 8416,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "logs",
+     "samples": [
+      {
+       "visible_chars": 918,
+       "reference_tokens": null,
+       "mode": "logs",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 918,
+       "reference_tokens": null,
+       "mode": "logs",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 918,
+       "reference_tokens": null,
+       "mode": "logs",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "error": {
+       "literal": "E_SETTLEMENT_417",
+       "present_in_every_preview": true
+      },
+      "request": {
+       "literal": "req-b91f",
+       "present_in_every_preview": true
+      },
+      "signed_amount": {
+       "literal": "-125.50 EUR",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       4.262833,
+       1.317958,
+       1.236333
+      ],
+      "median": 1.317958,
+      "min": 1.236333,
+      "max": 4.262833
+     }
+    },
+    {
+     "name": "json_middle_error",
+     "synthetic": true,
+     "description": "Unique JSON records with a failing record in the middle",
+     "input_sha256": "dd222f175c0c15644733e557220536b984ce627f211e186512d31a024738c89b",
+     "input_chars": 17133,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "json",
+     "samples": [
+      {
+       "visible_chars": 605,
+       "reference_tokens": null,
+       "mode": "json",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 605,
+       "reference_tokens": null,
+       "mode": "json",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 605,
+       "reference_tokens": null,
+       "mode": "json",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "error": {
+       "literal": "E_BALANCE_721",
+       "present_in_every_preview": true
+      },
+      "id": {
+       "literal": "tx_b4c291e78a65",
+       "present_in_every_preview": true
+      },
+      "exact_signed_integer": {
+       "literal": "-900719925474099312345",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.272708,
+       1.185208,
+       1.176042
+      ],
+      "median": 1.185208,
+      "min": 1.176042,
+      "max": 1.272708
+     }
+    },
+    {
+     "name": "traceback",
+     "synthetic": true,
+     "description": "Distinct scan logs with a traceback and a precise signed amount",
+     "input_sha256": "00badf1cc1bd0aa3017e45539fb59ccbd9b2c6fde1347999aa381a9159f1d574",
+     "input_chars": 8076,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "logs",
+     "samples": [
+      {
+       "visible_chars": 8076,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 8076,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 8076,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "error": {
+       "literal": "E_PRECISION_903",
+       "present_in_every_preview": true
+      },
+      "reference": {
+       "literal": "tx_41f9",
+       "present_in_every_preview": true
+      },
+      "amount_with_unit": {
+       "literal": "-0.00000017 BTC",
+       "present_in_every_preview": true
+      },
+      "function": {
+       "literal": "validate_exact_units",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       0.152333,
+       0.146792,
+       0.145541
+      ],
+      "median": 0.146792,
+      "min": 0.145541,
+      "max": 0.152333
+     }
+    },
+    {
+     "name": "source_identifiers",
+     "synthetic": true,
+     "description": "Distinct functions; crucial source facts in a middle function",
+     "input_sha256": "20156c8ce9c8a876771d2f92b19420e58e1b72d5636683f23be6535492b060f6",
+     "input_chars": 15531,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "code",
+     "samples": [
+      {
+       "visible_chars": 15531,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 15531,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 15531,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "function": {
+       "literal": "validate_settlement_quote",
+       "present_in_every_preview": true
+      },
+      "account": {
+       "literal": "acct_2b4f8109",
+       "present_in_every_preview": true
+      },
+      "comparison": {
+       "literal": "raw_units < -900719925474099312345",
+       "present_in_every_preview": true
+      },
+      "error": {
+       "literal": "E_UNIT_FLOOR_508",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       0.418917,
+       0.316708,
+       0.313333
+      ],
+      "median": 0.316708,
+      "min": 0.313333,
+      "max": 0.418917
+     }
+    },
+    {
+     "name": "csv_middle_error",
+     "synthetic": true,
+     "description": "Distinct table records with an anomaly away from the edges",
+     "input_sha256": "bde35b0188899c829ac59d85adb6166653e302111d38edf1e126bb81a98c1130",
+     "input_chars": 4474,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "csv",
+     "samples": [
+      {
+       "visible_chars": 4474,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 4474,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 4474,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "id": {
+       "literal": "csv_9a32ff",
+       "present_in_every_preview": true
+      },
+      "signed_integer": {
+       "literal": "-765432109",
+       "present_in_every_preview": true
+      },
+      "error": {
+       "literal": "E_RECONCILE_62",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       0.355416,
+       0.153125,
+       0.147333
+      ],
+      "median": 0.153125,
+      "min": 0.147333,
+      "max": 0.355416
+     }
+    },
+    {
+     "name": "small_unchanged",
+     "synthetic": true,
+     "description": "Short Unicode output below the compression threshold",
+     "input_sha256": "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+     "input_chars": 52,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "auto",
+     "samples": [
+      {
+       "visible_chars": 52,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 52,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 52,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "status": {
+       "literal": "status=ok",
+       "present_in_every_preview": true
+      },
+      "signed_amount": {
+       "literal": "-0.25 EUR",
+       "present_in_every_preview": true
+      },
+      "unicode": {
+       "literal": "v\u00e9rifi\u00e9",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": true,
+     "unchanged_expectation_met": true,
+     "local_compression_ms": {
+      "samples": [
+       0.005375,
+       0.003125,
+       0.0025
+      ],
+      "median": 0.003125,
+      "min": 0.0025,
+      "max": 0.005375
+     }
+    },
+    {
+     "name": "command-pytest-verbose",
+     "synthetic": true,
+     "description": "pytest -v, all passing but with a skip and a warning",
+     "input_sha256": "1c6d1df0dd63dd94f894a58d467cf813f843955abac95194a74dd3c8852af095",
+     "input_chars": 19660,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 312,
+       "reference_tokens": null,
+       "mode": "tests",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 312,
+       "reference_tokens": null,
+       "mode": "tests",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 312,
+       "reference_tokens": null,
+       "mode": "tests",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "summary": {
+       "literal": "400 passed, 1 skipped",
+       "present_in_every_preview": true
+      },
+      "skip": {
+       "literal": "test_later SKIPPED (no database)",
+       "present_in_every_preview": true
+      },
+      "warning": {
+       "literal": "DeprecationWarning: old api",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.92025,
+       1.980041,
+       1.847166
+      ],
+      "median": 1.92025,
+      "min": 1.847166,
+      "max": 1.980041
+     }
+    },
+    {
+     "name": "command-unittest-verbose",
+     "synthetic": true,
+     "description": "unittest -v, all passing but with one skip",
+     "input_sha256": "72e618062b18d491bb4bf7219f836607ef31e51aad3c04bf9cad94eb793eebbb",
+     "input_chars": 17257,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 309,
+       "reference_tokens": null,
+       "mode": "tests",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 309,
+       "reference_tokens": null,
+       "mode": "tests",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 309,
+       "reference_tokens": null,
+       "mode": "tests",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "summary": {
+       "literal": "Ran 401 tests",
+       "present_in_every_preview": true
+      },
+      "ok": {
+       "literal": "OK (skipped=1)",
+       "present_in_every_preview": true
+      },
+      "skip": {
+       "literal": "skipped 'needs db'",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.6195,
+       1.689084,
+       1.589708
+      ],
+      "median": 1.6195,
+      "min": 1.589708,
+      "max": 1.689084
+     }
+    },
+    {
+     "name": "command-jest",
+     "synthetic": true,
+     "description": "jest output with one skipped test",
+     "input_sha256": "06c895f95eaf6dd4c01d69b5c38b328ec54852a839d53a219069e57f1cd671fd",
+     "input_chars": 8380,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 209,
+       "reference_tokens": null,
+       "mode": "tests",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 209,
+       "reference_tokens": null,
+       "mode": "tests",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 209,
+       "reference_tokens": null,
+       "mode": "tests",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "summary": {
+       "literal": "1 skipped, 300 passed, 301 total",
+       "present_in_every_preview": true
+      },
+      "skip": {
+       "literal": "skipped later case",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.325708,
+       1.290792,
+       1.291
+      ],
+      "median": 1.291,
+      "min": 1.290792,
+      "max": 1.325708
+     }
+    },
+    {
+     "name": "command-git-log",
+     "synthetic": true,
+     "description": "full git log, hash and subject of every commit",
+     "input_sha256": "73e86b042f6c980d494091de59c1768af1170f7e0e614266a505f5e88075be69",
+     "input_chars": 24020,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 16431,
+       "reference_tokens": null,
+       "mode": "git-log",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 16431,
+       "reference_tokens": null,
+       "mode": "git-log",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 16431,
+       "reference_tokens": null,
+       "mode": "git-log",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "first_hash": {
+       "literal": "0000000000000000000000000000000000000000",
+       "present_in_every_preview": true
+      },
+      "last_hash": {
+       "literal": "0000000000000000000000000000000000000077",
+       "present_in_every_preview": true
+      },
+      "first_subject": {
+       "literal": "Change number 0",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.269208,
+       1.361292,
+       1.31175
+      ],
+      "median": 1.31175,
+      "min": 1.269208,
+      "max": 1.361292
+     }
+    },
+    {
+     "name": "command-git-status",
+     "synthetic": true,
+     "description": "long untracked list around one modified file",
+     "input_sha256": "45f1ba4ce5263bad151e588566e80164977bbf231e3445aaaa8a709c4928135b",
+     "input_chars": 7755,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 293,
+       "reference_tokens": null,
+       "mode": "git-status",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 293,
+       "reference_tokens": null,
+       "mode": "git-status",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 293,
+       "reference_tokens": null,
+       "mode": "git-status",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "branch": {
+       "literal": "On branch main",
+       "present_in_every_preview": true
+      },
+      "modified": {
+       "literal": "modified:   src/settlement/core.py",
+       "present_in_every_preview": true
+      },
+      "group": {
+       "literal": "data/raw/",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       0.854541,
+       0.816959,
+       0.841708
+      ],
+      "median": 0.841708,
+      "min": 0.816959,
+      "max": 0.854541
+     }
+    },
+    {
+     "name": "command-search",
+     "synthetic": true,
+     "description": "many rg matches in a few deep paths",
+     "input_sha256": "afc13dd0f7bb321908c44e493048979a44928f9e1171491c1ebe7175438186ee",
+     "input_chars": 37864,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 17900,
+       "reference_tokens": null,
+       "mode": "search",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 17900,
+       "reference_tokens": null,
+       "mode": "search",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 17900,
+       "reference_tokens": null,
+       "mode": "search",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "file": {
+       "literal": "module_11.py",
+       "present_in_every_preview": true
+      },
+      "first": {
+       "literal": "lookup_rate(0)",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.663084,
+       1.657791,
+       1.626916
+      ],
+      "median": 1.657791,
+      "min": 1.626916,
+      "max": 1.663084
+     }
+    },
+    {
+     "name": "command-diff-lockfile",
+     "synthetic": true,
+     "description": "source hunk beside a huge lockfile hunk",
+     "input_sha256": "153f8a585cf9e36a790874247b844e6e51ff81d26c5c788a0a0f04608019dcc4",
+     "input_chars": 43028,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 404,
+       "reference_tokens": null,
+       "mode": "git-diff",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 404,
+       "reference_tokens": null,
+       "mode": "git-diff",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 404,
+       "reference_tokens": null,
+       "mode": "git-diff",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "source_change": {
+       "literal": "+old_rate = 2",
+       "present_in_every_preview": true
+      },
+      "lockfile_named": {
+       "literal": "diff --git a/package-lock.json",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.975083,
+       1.868292,
+       1.667958
+      ],
+      "median": 1.868292,
+      "min": 1.667958,
+      "max": 1.975083
+     }
+    },
+    {
+     "name": "command-terminal-noise",
+     "synthetic": true,
+     "description": "colored progress bar overwritten in place",
+     "input_sha256": "8568f645c44cbab8974ec54e7e71206bac0397ac3b17a2ec1b81b2873fb9f347",
+     "input_chars": 25927,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 133,
+       "reference_tokens": null,
+       "mode": "clean",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 133,
+       "reference_tokens": null,
+       "mode": "clean",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 133,
+       "reference_tokens": null,
+       "mode": "clean",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "result": {
+       "literal": "Saved model to /srv/models/final.bin",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.156458,
+       1.16825,
+       1.261583
+      ],
+      "median": 1.16825,
+      "min": 1.156458,
+      "max": 1.261583
+     }
+    }
+   ]
+  },
+  "baseline": {
+   "source": "<checkout>",
+   "git": {
+    "commit": null,
+    "dirty": null
+   },
+   "tokenizer": {
+    "requested": "none",
+    "available": false,
+    "encoding": null,
+    "provider_billing_tokens": false,
+    "reason": "Token counting not requested; character counts are not tokens."
+   },
+   "cases": [
+    {
+     "name": "repetitive_logs",
+     "synthetic": true,
+     "description": "Repeated heartbeats plus varied batches and one error",
+     "input_sha256": "93b498c1de8811d6c57b421253665d908b01e010fb5c2434fb71617fe9012b75",
+     "input_chars": 8416,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "logs",
+     "samples": [
+      {
+       "visible_chars": 891,
+       "reference_tokens": null,
+       "mode": "logs",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 891,
+       "reference_tokens": null,
+       "mode": "logs",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 891,
+       "reference_tokens": null,
+       "mode": "logs",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "error": {
+       "literal": "E_SETTLEMENT_417",
+       "present_in_every_preview": true
+      },
+      "request": {
+       "literal": "req-b91f",
+       "present_in_every_preview": true
+      },
+      "signed_amount": {
+       "literal": "-125.50 EUR",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       2.640334,
+       1.147208,
+       1.100625
+      ],
+      "median": 1.147208,
+      "min": 1.100625,
+      "max": 2.640334
+     }
+    },
+    {
+     "name": "json_middle_error",
+     "synthetic": true,
+     "description": "Unique JSON records with a failing record in the middle",
+     "input_sha256": "dd222f175c0c15644733e557220536b984ce627f211e186512d31a024738c89b",
+     "input_chars": 17133,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "json",
+     "samples": [
+      {
+       "visible_chars": 578,
+       "reference_tokens": null,
+       "mode": "json",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 578,
+       "reference_tokens": null,
+       "mode": "json",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 578,
+       "reference_tokens": null,
+       "mode": "json",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "error": {
+       "literal": "E_BALANCE_721",
+       "present_in_every_preview": true
+      },
+      "id": {
+       "literal": "tx_b4c291e78a65",
+       "present_in_every_preview": true
+      },
+      "exact_signed_integer": {
+       "literal": "-900719925474099312345",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.05675,
+       1.010083,
+       1.01125
+      ],
+      "median": 1.01125,
+      "min": 1.010083,
+      "max": 1.05675
+     }
+    },
+    {
+     "name": "traceback",
+     "synthetic": true,
+     "description": "Distinct scan logs with a traceback and a precise signed amount",
+     "input_sha256": "00badf1cc1bd0aa3017e45539fb59ccbd9b2c6fde1347999aa381a9159f1d574",
+     "input_chars": 8076,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "logs",
+     "samples": [
+      {
+       "visible_chars": 8076,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 8076,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 8076,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "error": {
+       "literal": "E_PRECISION_903",
+       "present_in_every_preview": true
+      },
+      "reference": {
+       "literal": "tx_41f9",
+       "present_in_every_preview": true
+      },
+      "amount_with_unit": {
+       "literal": "-0.00000017 BTC",
+       "present_in_every_preview": true
+      },
+      "function": {
+       "literal": "validate_exact_units",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       0.039917,
+       0.035958,
+       0.035084
+      ],
+      "median": 0.035958,
+      "min": 0.035084,
+      "max": 0.039917
+     }
+    },
+    {
+     "name": "source_identifiers",
+     "synthetic": true,
+     "description": "Distinct functions; crucial source facts in a middle function",
+     "input_sha256": "20156c8ce9c8a876771d2f92b19420e58e1b72d5636683f23be6535492b060f6",
+     "input_chars": 15531,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "code",
+     "samples": [
+      {
+       "visible_chars": 15531,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 15531,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 15531,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "function": {
+       "literal": "validate_settlement_quote",
+       "present_in_every_preview": true
+      },
+      "account": {
+       "literal": "acct_2b4f8109",
+       "present_in_every_preview": true
+      },
+      "comparison": {
+       "literal": "raw_units < -900719925474099312345",
+       "present_in_every_preview": true
+      },
+      "error": {
+       "literal": "E_UNIT_FLOOR_508",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       0.241541,
+       0.141875,
+       0.140958
+      ],
+      "median": 0.141875,
+      "min": 0.140958,
+      "max": 0.241541
+     }
+    },
+    {
+     "name": "csv_middle_error",
+     "synthetic": true,
+     "description": "Distinct table records with an anomaly away from the edges",
+     "input_sha256": "bde35b0188899c829ac59d85adb6166653e302111d38edf1e126bb81a98c1130",
+     "input_chars": 4474,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "csv",
+     "samples": [
+      {
+       "visible_chars": 4474,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 4474,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 4474,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "id": {
+       "literal": "csv_9a32ff",
+       "present_in_every_preview": true
+      },
+      "signed_integer": {
+       "literal": "-765432109",
+       "present_in_every_preview": true
+      },
+      "error": {
+       "literal": "E_RECONCILE_62",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       0.3,
+       0.098167,
+       0.093708
+      ],
+      "median": 0.098167,
+      "min": 0.093708,
+      "max": 0.3
+     }
+    },
+    {
+     "name": "small_unchanged",
+     "synthetic": true,
+     "description": "Short Unicode output below the compression threshold",
+     "input_sha256": "ee5d51aeda630f828b1c814c24678c83d59bfa5cdc0161902b1c6bc3ac20de26",
+     "input_chars": 52,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "auto",
+     "samples": [
+      {
+       "visible_chars": 52,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 52,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 52,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "status": {
+       "literal": "status=ok",
+       "present_in_every_preview": true
+      },
+      "signed_amount": {
+       "literal": "-0.25 EUR",
+       "present_in_every_preview": true
+      },
+      "unicode": {
+       "literal": "v\u00e9rifi\u00e9",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": true,
+     "unchanged_expectation_met": true,
+     "local_compression_ms": {
+      "samples": [
+       0.001625,
+       0.00125,
+       0.001084
+      ],
+      "median": 0.00125,
+      "min": 0.001084,
+      "max": 0.001625
+     }
+    },
+    {
+     "name": "command-pytest-verbose",
+     "synthetic": true,
+     "description": "pytest -v, all passing but with a skip and a warning",
+     "input_sha256": "1c6d1df0dd63dd94f894a58d467cf813f843955abac95194a74dd3c8852af095",
+     "input_chars": 19660,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 19660,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 19660,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 19660,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "summary": {
+       "literal": "400 passed, 1 skipped",
+       "present_in_every_preview": true
+      },
+      "skip": {
+       "literal": "test_later SKIPPED (no database)",
+       "present_in_every_preview": true
+      },
+      "warning": {
+       "literal": "DeprecationWarning: old api",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.26825,
+       1.266959,
+       1.245666
+      ],
+      "median": 1.266959,
+      "min": 1.245666,
+      "max": 1.26825
+     }
+    },
+    {
+     "name": "command-unittest-verbose",
+     "synthetic": true,
+     "description": "unittest -v, all passing but with one skip",
+     "input_sha256": "72e618062b18d491bb4bf7219f836607ef31e51aad3c04bf9cad94eb793eebbb",
+     "input_chars": 17257,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 934,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 934,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 934,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "summary": {
+       "literal": "Ran 401 tests",
+       "present_in_every_preview": true
+      },
+      "ok": {
+       "literal": "OK (skipped=1)",
+       "present_in_every_preview": true
+      },
+      "skip": {
+       "literal": "skipped 'needs db'",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.999209,
+       1.813625,
+       1.700584
+      ],
+      "median": 1.813625,
+      "min": 1.700584,
+      "max": 1.999209
+     }
+    },
+    {
+     "name": "command-jest",
+     "synthetic": true,
+     "description": "jest output with one skipped test",
+     "input_sha256": "06c895f95eaf6dd4c01d69b5c38b328ec54852a839d53a219069e57f1cd671fd",
+     "input_chars": 8380,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 701,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 701,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 701,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "summary": {
+       "literal": "1 skipped, 300 passed, 301 total",
+       "present_in_every_preview": true
+      },
+      "skip": {
+       "literal": "skipped later case",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.371333,
+       1.434417,
+       1.396417
+      ],
+      "median": 1.396417,
+      "min": 1.371333,
+      "max": 1.434417
+     }
+    },
+    {
+     "name": "command-git-log",
+     "synthetic": true,
+     "description": "full git log, hash and subject of every commit",
+     "input_sha256": "73e86b042f6c980d494091de59c1768af1170f7e0e614266a505f5e88075be69",
+     "input_chars": 24020,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 604,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 604,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 604,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "first_hash": {
+       "literal": "0000000000000000000000000000000000000000",
+       "present_in_every_preview": true
+      },
+      "last_hash": {
+       "literal": "0000000000000000000000000000000000000077",
+       "present_in_every_preview": true
+      },
+      "first_subject": {
+       "literal": "Change number 0",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       2.619583,
+       2.639208,
+       2.549792
+      ],
+      "median": 2.619583,
+      "min": 2.549792,
+      "max": 2.639208
+     }
+    },
+    {
+     "name": "command-git-status",
+     "synthetic": true,
+     "description": "long untracked list around one modified file",
+     "input_sha256": "45f1ba4ce5263bad151e588566e80164977bbf231e3445aaaa8a709c4928135b",
+     "input_chars": 7755,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 758,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 758,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 758,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "branch": {
+       "literal": "On branch main",
+       "present_in_every_preview": true
+      },
+      "modified": {
+       "literal": "modified:   src/settlement/core.py",
+       "present_in_every_preview": true
+      },
+      "group": {
+       "literal": "data/raw/",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       1.227959,
+       1.197958,
+       1.189625
+      ],
+      "median": 1.197958,
+      "min": 1.189625,
+      "max": 1.227959
+     }
+    },
+    {
+     "name": "command-search",
+     "synthetic": true,
+     "description": "many rg matches in a few deep paths",
+     "input_sha256": "afc13dd0f7bb321908c44e493048979a44928f9e1171491c1ebe7175438186ee",
+     "input_chars": 37864,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 1734,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 1734,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 1734,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "file": {
+       "literal": "module_11.py",
+       "present_in_every_preview": true
+      },
+      "first": {
+       "literal": "lookup_rate(0)",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       3.521083,
+       3.564375,
+       3.610875
+      ],
+      "median": 3.564375,
+      "min": 3.521083,
+      "max": 3.610875
+     }
+    },
+    {
+     "name": "command-diff-lockfile",
+     "synthetic": true,
+     "description": "source hunk beside a huge lockfile hunk",
+     "input_sha256": "153f8a585cf9e36a790874247b844e6e51ff81d26c5c788a0a0f04608019dcc4",
+     "input_chars": 43028,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 43028,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 43028,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 43028,
+       "reference_tokens": null,
+       "mode": "none",
+       "unchanged": true,
+       "has_receipt": false,
+       "restore_command_visible": null,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "source_change": {
+       "literal": "+old_rate = 2",
+       "present_in_every_preview": true
+      },
+      "lockfile_named": {
+       "literal": "diff --git a/package-lock.json",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "verbatim_output",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       0.004167,
+       0.003,
+       0.002375
+      ],
+      "median": 0.003,
+      "min": 0.002375,
+      "max": 0.004167
+     }
+    },
+    {
+     "name": "command-terminal-noise",
+     "synthetic": true,
+     "description": "colored progress bar overwritten in place",
+     "input_sha256": "8568f645c44cbab8974ec54e7e71206bac0397ac3b17a2ec1b81b2873fb9f347",
+     "input_chars": 25927,
+     "input_reference_tokens": null,
+     "requested_mode": "auto",
+     "fixture_explicit_mode": "plain",
+     "samples": [
+      {
+       "visible_chars": 661,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 661,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      },
+      {
+       "visible_chars": 661,
+       "reference_tokens": null,
+       "mode": "plain",
+       "unchanged": false,
+       "has_receipt": true,
+       "restore_command_visible": true,
+       "reported_visible_chars_match": true
+      }
+     ],
+     "sentinels": {
+      "result": {
+       "literal": "Saved model to /srv/models/final.bin",
+       "present_in_every_preview": true
+      }
+     },
+     "restoration_exact_every_run": true,
+     "restoration_method": "stored_receipt",
+     "unchanged_expected": false,
+     "unchanged_expectation_met": null,
+     "local_compression_ms": {
+      "samples": [
+       2.200041,
+       2.2235,
+       2.27275
+      ],
+      "median": 2.2235,
+      "min": 2.200041,
+      "max": 2.27275
+     }
+    }
+   ]
+  },
+  "comparison": [
+   {
+    "name": "repetitive_logs",
+    "visible_chars_delta_current_minus_baseline": 27,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "json_middle_error",
+    "visible_chars_delta_current_minus_baseline": 27,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "traceback",
+    "visible_chars_delta_current_minus_baseline": 0,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "source_identifiers",
+    "visible_chars_delta_current_minus_baseline": 0,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "csv_middle_error",
+    "visible_chars_delta_current_minus_baseline": 0,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "small_unchanged",
+    "visible_chars_delta_current_minus_baseline": 0,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "command-pytest-verbose",
+    "visible_chars_delta_current_minus_baseline": -19348,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "command-unittest-verbose",
+    "visible_chars_delta_current_minus_baseline": -625,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "command-jest",
+    "visible_chars_delta_current_minus_baseline": -492,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "command-git-log",
+    "visible_chars_delta_current_minus_baseline": 15827,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "command-git-status",
+    "visible_chars_delta_current_minus_baseline": -465,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "command-search",
+    "visible_chars_delta_current_minus_baseline": 16166,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "command-diff-lockfile",
+    "visible_chars_delta_current_minus_baseline": -42624,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   },
+   {
+    "name": "command-terminal-noise",
+    "visible_chars_delta_current_minus_baseline": -528,
+    "reference_tokens_delta_current_minus_baseline": null,
+    "sentinels_newly_preserved": [],
+    "sentinels_regressed": [],
+    "restoration_exact_current": true,
+    "restoration_exact_baseline": true
+   }
+  ]
+ },
+ "runtime": {
+  "current": {
+   "python": "3.14.8",
+   "python_startup_ms": 13.3,
+   "hook_small_output_ms": 29.3,
+   "hook_large_output_ms": 42.4,
+   "compress_15mib_ms": 1624.9,
+   "compress_15mib_peak_rss_mb": 103.6,
+   "database_bytes_after_runs": 319488
+  },
+  "baseline": {
+   "python": "3.14.8",
+   "python_startup_ms": 13.3,
+   "hook_small_output_ms": 50.9,
+   "hook_large_output_ms": 56.7,
+   "compress_15mib_ms": 1394.9,
+   "compress_15mib_peak_rss_mb": 82.0,
+   "database_bytes_after_runs": 311296
+  }
+ },
+ "retrieval": {
+  "code": {
+   "tree_1": {
+    "files": 35,
+    "symbols": 399,
+    "source_chars": 311530,
+    "scan_seconds": 0.05,
+    "lookups": 150,
+    "lookup_median_seconds": 0.003,
+    "symbol_source_exact": 150,
+    "symbol_over_response_budget": 0,
+    "symbol_vs_whole_file_chars_median_pct": 6.4,
+    "ranked_map_seconds": 0.11,
+    "ranked_map_chars": 3932,
+    "references_seconds": 0.02
+   },
+   "tree_2": {
+    "files": 876,
+    "symbols": 9742,
+    "source_chars": 6303590,
+    "scan_seconds": 0.64,
+    "lookups": 150,
+    "lookup_median_seconds": 0.039,
+    "symbol_source_exact": 150,
+    "symbol_over_response_budget": 0,
+    "symbol_vs_whole_file_chars_median_pct": 3.1,
+    "ranked_map_seconds": 1.75,
+    "ranked_map_chars": 3951,
+    "references_seconds": 0.06
+   },
+   "tree_3": {
+    "files": 571,
+    "symbols": 8023,
+    "source_chars": 5710272,
+    "scan_seconds": 0.56,
+    "lookups": 150,
+    "lookup_median_seconds": 0.032,
+    "symbol_source_exact": 148,
+    "symbol_over_response_budget": 2,
+    "symbol_vs_whole_file_chars_median_pct": 3.9,
+    "ranked_map_seconds": 1.35,
+    "ranked_map_chars": 3959,
+    "references_seconds": 0.03
+   },
+   "tree_4": {
+    "files": 95,
+    "symbols": 1624,
+    "source_chars": 1624017,
+    "scan_seconds": 0.12,
+    "lookups": 150,
+    "lookup_median_seconds": 0.008,
+    "symbol_source_exact": 147,
+    "symbol_over_response_budget": 3,
+    "symbol_vs_whole_file_chars_median_pct": 1.0,
+    "ranked_map_seconds": 0.21,
+    "ranked_map_chars": 3959,
+    "references_seconds": 0.05
+   }
+  },
+  "receipt_search": {
+   "receipts": 200,
+   "lines_each": 1500,
+   "queries": 25,
+   "right_passage_first": 25,
+   "passage_chars_median": 564,
+   "whole_original_chars_median": 62680,
+   "fts5_seconds_median": 0.157,
+   "python_ranking_seconds_median": 0.505
+  },
+  "scope": "characters returned by tools; not provider tokens or task outcomes"
+ },
+ "real_session_replay": {
+  "sessions": 260,
+  "calls": {
+   "Bash": 3978,
+   "Read": 949,
+   "Grep": 0
+  },
+  "chars_seen": {
+   "Bash": 8846175,
+   "Read": 2949328
+  },
+  "bash_saved_chars": {
+   "allowlist_only": 0,
+   "command_views": 12550,
+   "cleanup_for_every_command": 13014
+  },
+  "bash_saved_pct_of_bash": {
+   "allowlist_only": 0.0,
+   "command_views": 0.14,
+   "cleanup_for_every_command": 0.15
+  },
+  "reduced_calls": {
+   "allowlist_only": 0,
+   "command_views": 1,
+   "cleanup_for_every_command": 2
+  },
+  "command_view_by_format": {
+   "clean": {
+    "before": 14042,
+    "after": 1492
+   }
+  },
+  "diagnostic_lines_absent_from_views": 0,
+  "saved_pct_of_all_replayed_chars": 0.11,
+  "processing_seconds": 0.74,
+  "scope": "characters in tool results; not provider tokens, cost or task outcomes"
+ },
+ "real_session_command_shape_pct_of_bash_chars": {
+  "chained_or_piped": 90.6,
+  "failed": 4.3,
+  "single_other": 4.1,
+  "recognized": 1.1
+ },
+ "js_ts_parser_against_typescript_compiler": {
+  "files": 360,
+  "symbols": 3476,
+  "recall": 1.0,
+  "precision": 1.0,
+  "end_line_exact": 1.0,
+  "scope": "declarations at module scope and in class bodies"
+ }
+}
