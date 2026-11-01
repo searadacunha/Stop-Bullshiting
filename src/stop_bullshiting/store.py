@@ -32,7 +32,27 @@ CREATE TABLE IF NOT EXISTS notes (
     updated INTEGER NOT NULL,
     PRIMARY KEY (scope, key)
 );
+CREATE TABLE IF NOT EXISTS counters (
+    day TEXT NOT NULL,
+    source TEXT NOT NULL,
+    outcome TEXT NOT NULL,
+    calls INTEGER NOT NULL,
+    original_chars INTEGER NOT NULL,
+    visible_chars INTEGER NOT NULL,
+    micros INTEGER NOT NULL,
+    PRIMARY KEY (day, source, outcome)
+);
 """
+
+
+def _quota_bytes() -> int | None:
+    """Opt-in size limit for stored originals; nothing is evicted without it."""
+    raw = os.environ.get("SBS_RECEIPT_MAX_MB")
+    if raw is None or raw == "":
+        return None
+    if not raw.isdecimal() or not 1 <= int(raw) <= 1048576:
+        raise ValueError("SBS_RECEIPT_MAX_MB must be an integer from 1 to 1048576")
+    return int(raw) * 1024 * 1024
 
 
 def _retention_cutoff() -> int | None:
@@ -73,20 +93,61 @@ def db() -> Iterator[sqlite3.Connection]:
 def save_receipt(text: str, *, source: str, mode: str, visible_chars: int) -> str:
     """Receipt identifiers are random, not plaintext-derived."""
     identifier = uuid.uuid4().hex[:14]
-    encoded = text.encode("utf-8", errors="replace")
+    # surrogatepass: JSON input can hold lone surrogates, and a receipt must restore them.
+    encoded = text.encode("utf-8", errors="surrogatepass")
+    blob = zlib.compress(encoded, 6)
+    quota = _quota_bytes()
+    if quota is not None and len(blob) > quota:
+        # Callers keep the unreduced output: no preview without its original.
+        raise ValueError("Output exceeds SBS_RECEIPT_MAX_MB")
     with db() as con:
         con.execute(
             "INSERT INTO receipts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (identifier, int(time.time()), source[:160], mode, sqlite3.Binary(zlib.compress(encoded, 6)),
+            (identifier, int(time.time()), source[:160], mode, sqlite3.Binary(blob),
              len(text), visible_chars, hashlib.sha256(encoded).hexdigest()),
         )
+        if quota is not None:
+            stored = con.execute("SELECT COALESCE(SUM(LENGTH(original)),0) FROM receipts").fetchone()[0]
+            if stored > quota:
+                rows = con.execute("SELECT id, LENGTH(original) FROM receipts WHERE id != ? "
+                                   "ORDER BY timestamp, rowid", (identifier,))
+                for victim, size in rows.fetchall():
+                    if stored <= quota:
+                        break
+                    con.execute("DELETE FROM receipts WHERE id = ?", (victim,))
+                    stored -= size
     return identifier
 
 
 def get_receipt(identifier: str) -> str | None:
     with db() as con:
         row = con.execute("SELECT original FROM receipts WHERE id = ?", (identifier,)).fetchone()
-    return zlib.decompress(row[0]).decode("utf-8") if row else None
+    if row:
+        count_event("restore", "restore")
+    return zlib.decompress(row[0]).decode("utf-8", "surrogatepass") if row else None
+
+
+def iter_receipts(limit: int):
+    """Yield (id, timestamp, source, text), newest first, one decompressed original at a time."""
+    with db() as con:
+        rows = con.execute("SELECT id, timestamp, source, original FROM receipts "
+                           "ORDER BY timestamp DESC, rowid DESC LIMIT ?", (limit,)).fetchall()
+    for identifier, stamp, source, blob in rows:
+        yield identifier, stamp, source, zlib.decompress(blob).decode("utf-8", "surrogatepass")
+
+
+def count_event(source: str, outcome: str, original: int = 0, visible: int = 0, micros: int = 0) -> None:
+    """Add to a daily counter. Holds sizes only, and a counting failure never matters."""
+    day = time.strftime("%Y-%m-%d", time.gmtime())
+    try:
+        with db() as con:
+            con.execute("INSERT INTO counters VALUES (?, ?, ?, 1, ?, ?, ?) "
+                        "ON CONFLICT(day, source, outcome) DO UPDATE SET calls=calls+1, "
+                        "original_chars=original_chars+excluded.original_chars, "
+                        "visible_chars=visible_chars+excluded.visible_chars, "
+                        "micros=micros+excluded.micros", (day, source[:60], outcome, original, visible, micros))
+    except (OSError, sqlite3.Error, ValueError):
+        pass
 
 
 def report() -> dict:
@@ -97,17 +158,33 @@ def report() -> dict:
         ).fetchone()
         newest = con.execute("SELECT id, source, original_chars, visible_chars FROM receipts "
                              "ORDER BY timestamp DESC LIMIT 8").fetchall()
+        stored = con.execute("SELECT COALESCE(SUM(LENGTH(original)),0) FROM receipts").fetchone()[0]
+        events = con.execute("SELECT source, outcome, SUM(calls), SUM(original_chars), SUM(visible_chars), "
+                             "SUM(micros) FROM counters GROUP BY source, outcome "
+                             "ORDER BY source, outcome").fetchall()
+    target = home() / "store.sqlite3"
     return {"receipts": row[0], "original_chars": row[1], "visible_chars": row[2],
-            "saved_chars": row[1] - row[2], "recent": newest}
+            "saved_chars": row[1] - row[2], "recent": newest,
+            "stored_bytes": stored, "database_bytes": target.stat().st_size if target.exists() else 0,
+            "events": [dict(zip(("source", "outcome", "calls", "original_chars", "visible_chars", "micros"), event))
+                       for event in events]}
 
 
 def purge(*, days: int) -> int:
     if days < 0:
         raise ValueError("days must be nonnegative")
     with db() as con:
-        cursor = con.execute("DELETE FROM receipts WHERE timestamp < ?",
-                             (int(time.time()) - days * 86400,))
-        return cursor.rowcount
+        removed = con.execute("DELETE FROM receipts WHERE timestamp < ?",
+                              (int(time.time()) - days * 86400,)).rowcount
+    if removed:
+        # DELETE only marks pages free. Hand the space back to the disk.
+        target = home() / "store.sqlite3"
+        conn = sqlite3.connect(str(target), timeout=10)
+        try:
+            conn.execute("VACUUM")
+        finally:
+            conn.close()
+    return removed
 
 
 def note_put(scope: str, key: str, value: str) -> None:
