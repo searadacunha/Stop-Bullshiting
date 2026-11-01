@@ -15,12 +15,14 @@ from decimal import Decimal, InvalidOperation
 
 from .config import max_chars as default_max_chars, min_chars as default_min_chars
 from .config import min_gain
+from .filters import ANSI, classify, clean, command_view
 from .store import save_receipt
 
 IMPORTANT = re.compile(
-    r"(?i)(\b(error|fatal|failed|failure|exception|traceback|panic|warning|warn|"
+    r"(?i)(\b(fatal|failed|failure|fail|traceback|panic|warning|warn|"
     r"assertion|passed|summary|total|collected|permission denied|not found|"
-    r"no such file|exit code)\b|\bE\s+\w+Error\b|^\s*\[fail\])"
+    r"no such file|exit code|segmentation fault|killed|core dumped|exited with)\b"
+    r"|(?:error|exception)\b|err!|^\s*\[fail\])"
 )
 # Avoid creating another local copy of recognizable credentials. This is not a
 # general secret scanner and does NOT redact the command output sent to the agent.
@@ -28,9 +30,19 @@ IMPORTANT = re.compile(
 SENSITIVE = re.compile(
     r"(?im)(?:-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----"
     r"|\bauthorization\s*:\s*(?:bearer|basic)\s+\S{12,}"
-    r"|[\"']?(?:x-api-key|api[_-]?key|access[_-]?token|refresh[_-]?token|"
-    r"client[_-]?secret|password)[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9._~/+=-]{16,})"
+    r"|(?:api[_-]?key|access[_-]?key|secret[_-]?key|token|secret|password|passwd|pwd|credentials?)"
+    r"[\"']?\s*[:=]\s*[\"']?(?=[^\s\"']*[a-z])[^\s\"']{8,}"
+    r"|\b[a-z][a-z0-9+.-]*://[^/\s:@]+:[^/\s@]+@"
+    r"|\b(?:ghp_|gho_|ghs_|github_pat_|glpat-|sk-|xox[abprs]-|AKIA)[A-Za-z0-9_-]{12,})"
 )
+
+LOG_TIMESTAMP = re.compile(r"^\[?\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:[.,]\d+)?(?:Z|[+-]\d\d:?\d\d)?\]?\s*")
+
+# Every SENSITIVE alternative contains one of these. Checking them first spares
+# large outputs a case-insensitive scan from every position.
+SENSITIVE_HINTS = ("private key", "authorization", "_key", "-key", "apikey", "accesskey", "secretkey", "token",
+                   "secret", "password", "passwd", "pwd", "credential", "://", "ghp_", "gho_", "ghs_", "github_pat_",
+                   "glpat-", "sk-", "xox", "akia")
 
 JSON_KEEP = {"error", "errors", "warning", "warnings", "failed", "failures",
              "status", "summary", "message", "traceback", "exception", "tests",
@@ -50,6 +62,13 @@ class Compression:
         if not self.original_chars:
             return 0.0
         return max(0., 100 * (1 - self.visible_chars / self.original_chars))
+
+
+def _has_secret(text: str) -> bool:
+    # Colors can split a keyword from its value, and cleanup would then rejoin them in a receipt.
+    text = ANSI.sub("", text) if "\x1b" in text else text
+    lowered = text.lower()
+    return any(hint in lowered for hint in SENSITIVE_HINTS) and SENSITIVE.search(text) is not None
 
 
 def detect(text: str) -> str:
@@ -288,15 +307,19 @@ def _view(text: str, mode: str, budget: int) -> str | None:
     if mode == "logs":
         reduced: list[str] = []
         last = None
+        last_line = None
         count = 0
         for line in lines:
-            if line == last and not IMPORTANT.search(line):
+            # Timestamps differ on every row; a repeat is the same message after them.
+            message = last if line == last_line else LOG_TIMESTAMP.sub("", line)
+            last_line = line
+            if message == last and not IMPORTANT.search(line):
                 count += 1
                 continue
             if count:
                 reduced.append(f"... [previous line repeated {count} additional times]")
             reduced.append(line)
-            last = line
+            last = message
             count = 0
         if count:
             reduced.append(f"... [previous line repeated {count} additional times]")
@@ -304,46 +327,83 @@ def _view(text: str, mode: str, budget: int) -> str | None:
     return _selection(lines, budget=budget, mode=mode)
 
 
+def _marker(kind: str, original: int, visible: int, receipt: str | None) -> str:
+    if receipt:
+        return (f"\n[SBS {kind}: {original} → {visible} chars; search it: sbs find WORDS; "
+                f"full original: sbs show {receipt}]")
+    return f"\n[SBS {kind}: {original} → {visible} chars; original not stored]"
+
+
+def _with_receipt(text: str, view: str, kind: str, *, source: str, store: bool) -> Compression:
+    """Attach the restore route to a command-aware view, or keep the original if it gains too little."""
+    view = view.strip("\n")
+    marker_size = len(_marker(kind, len(text), len(view), "0" * 14 if store else None))
+    if len(view) + marker_size >= len(text) * (1 - min_gain()):
+        return Compression(text, "none", len(text), len(text))
+    receipt = save_receipt(text, source=f"{source}:{kind}", mode=kind,
+                           visible_chars=len(view) + marker_size) if store else None
+    extra = _marker(kind, len(text), len(view), receipt)
+    output = view + extra
+    return Compression(output, kind, len(text), len(output), receipt)
+
+
 def compress(text: str, *, mode: str = "auto", max_len: int | None = None,
-             minimum: int | None = None, source: str = "stdin", store: bool = True) -> Compression:
+             minimum: int | None = None, source: str = "stdin", store: bool = True,
+             command: str | None = None, generic: bool = True, cleanup: bool = False) -> Compression:
     """Return compacted view; store entire original locally if changed.
 
     If the text doesn't shrink enough or diagnostics cannot fit faithfully,
     return it verbatim with no receipt, even above the requested view size.
+
+    ``command`` selects a command-aware view when its output format is recognized.
+    ``generic=False`` keeps everything else unchanged instead of previewing it.
+    ``cleanup=True`` also folds repeated lines and JSON spacing for any output.
     """
     if mode not in ("auto", "json", "logs", "diff", "code", "csv", "plain"):
         raise ValueError(f"Unsupported mode {mode!r}")
     # Do not persist recognizable secret material in reversible local receipts.
     # Passing through also avoids removing diagnostic context during reduction.
-    if SENSITIVE.search(text):
+    if _has_secret(text):
         return Compression(text, "none", len(text), len(text))
     maximum = default_max_chars() if max_len is None else max(300, max_len)
     threshold = default_min_chars() if minimum is None else max(0, minimum)
-    if len(text) <= threshold or len(text) <= maximum:
+    if len(text) <= threshold:
         return Compression(text, "none", len(text), len(text))
-    actual_mode = detect(text) if mode == "auto" else mode
+    if command and mode == "auto" and classify(command):
+        # An explicit size is a request; otherwise a view keeps its items (see ITEM_BUDGET).
+        selected = command_view(command, text, (maximum - 135) if max_len is not None else None)
+        if selected:
+            result = _with_receipt(text, selected[1], selected[0], source=source, store=store)
+            if result.receipt or not store and result.mode != "none":
+                return result
+    # Colors and overwritten progress are invisible on a terminal: no reader loses them.
+    basis = clean(text) if mode == "auto" and (cleanup or "\x1b" in text or "\r" in text) else text
+    if basis is not text and (len(basis) <= maximum or not generic):
+        result = _with_receipt(text, basis, "clean", source=source, store=store)
+        if result.mode != "none":
+            return result
+    if len(text) <= maximum or not generic:
+        return Compression(text, "none", len(text), len(text))
+    actual_mode = detect(basis) if mode == "auto" else mode
     if mode == "auto" and actual_mode in ("code", "diff", "csv"):
         return Compression(text, "none", len(text), len(text))
     if mode in ("auto", "logs", "plain") and "Traceback (most recent call last):" in text:
         return Compression(text, "none", len(text), len(text))
-    view = _view(text, actual_mode, maximum - 135)
+    view = _view(basis, actual_mode, maximum - 165)
     if view is None:
         return Compression(text, "none", len(text), len(text))
     view = view.strip("\n")
-    if not view or len(view) > maximum - 100:
+    if not view or len(view) > maximum - 130:
         # Last-resort transparent truncation, including the tail for diagnostics.
-        half = (maximum - 190) // 2
-        view = text[:half] + "\n... [middle omitted] ...\n" + text[-half:]
+        half = (maximum - 220) // 2
+        view = basis[:half] + "\n... [middle omitted] ...\n" + basis[-half:]
     if len(view) >= len(text) * (1 - min_gain()):
         return Compression(text, "none", len(text), len(text))
     # The receipt holds the *complete* UTF-8 original; no remote service is used.
-    preview_marker = (f"\n[SBS {actual_mode}: {len(text)} → {len(view)} chars; "
-                      f"full original: sbs show {'0' * 14}]")
+    preview_marker = _marker(actual_mode, len(text), len(view), "0" * 14)
     receipt = save_receipt(text, source=source, mode=actual_mode,
                            visible_chars=len(view) + len(preview_marker)) if store else None
-    extra = (f"\n[SBS {actual_mode}: {len(text)} → {len(view)} chars; "
-             f"full original: sbs show {receipt}]" if receipt else
-             f"\n[SBS {actual_mode}: {len(text)} → {len(view)} chars; original not stored]")
+    extra = _marker(actual_mode, len(text), len(view), receipt)
     output = (view + extra)[:maximum]
     # Account for actual visible text. The database records the view+approx marker,
     # reporting is explicitly approximate where the exact marker length varies.
