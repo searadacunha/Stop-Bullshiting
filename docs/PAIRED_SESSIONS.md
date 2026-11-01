@@ -1,9 +1,10 @@
-# Paired agent-task evaluation (not yet run)
+# Paired agent-task evaluation
 
-This is an executable **measurement protocol**, not evidence that SBS saves
-money or improves coding. The repository currently has synthetic filter tests;
-it does **not** contain provider-billed paired coding sessions or success-rate
-results. No API calls or paid agent tasks are initiated by this script.
+`scripts/paired_runner.py` runs small tasks on real Claude Code with and without
+the hook, and `scripts/paired_sessions.py` summarizes any such records without
+calling a model. Results of the runs made so far are in
+[TOKEN_EFFICIENCY.md](TOKEN_EFFICIENCY.md). They are small, synthetic-repository
+trials, not evidence that SBS saves money on real projects.
 
 ## Trial design
 
@@ -48,8 +49,7 @@ verified. It does not calculate p-values or infer causation from tiny samples.
 
 ## Evidence still needed
 
-A genuine paired study with independently verified task outcomes and provider
-billing is not included. Current SBS benchmark results are synthetic regression
-measurements only. Real-agent execution may consume paid quotas and must be
-authorized separately. Do not publish raw traces containing private files, tokens,
-API credentials or personal information.
+The trials so far use synthetic repositories, short tasks and client-reported
+figures. A study on real repositories and longer tasks with provider billing is
+not included. Real-agent execution consumes quota. Do not publish raw traces
+containing private files, tokens, API credentials or personal information.

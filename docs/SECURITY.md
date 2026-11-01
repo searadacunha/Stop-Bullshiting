@@ -6,7 +6,9 @@
 - **Secrets inside tool output**: SQLite receipts use zlib only (not encryption). This tool does not sanitize secrets; use `--no-store` for sensitive output and encrypt your drive.
 - **MCP workspace boundary**: file reads, searches, symbol maps and project-note scopes are confined to the server's current directory, or SBS_WORKSPACE if set by the trusted host. Absolute paths inside the workspace work; traversal and symlinks pointing outside are rejected. Directory search ignores symlinked files. This is a logical boundary, not a sandbox against an adversary who can rewrite paths or symlinks during a read.
 - **Unexpected command execution**: the automatic Codex wrapper recognizes only basic read-only commands, rejects absolute/home/parent paths and shell metacharacters, and calls `subprocess.run` with an argument list (no shell execution). Explicit `sbs run` executes only the command supplied by the user or agent.
+- **Permission bypass**: Codex evaluates its exec-policy rules against the rewritten command, so wrapping a command would hide it from a rule written for the original. A real run confirmed this for a `forbidden` rule. The hook therefore leaves a command alone when any rule file names its program, or when a rule file cannot be read. In Codex 0.166.0, `permissionDecision: allow` with `updatedInput` did not widen the sandbox in testing: a rewritten write in a read-only sandbox was still refused. The Claude hook only changes output after a command has run and never emits a permission decision.
 - **Configuration corruption**: install routines merge JSON and backup any preexisting contents before changing them. Invalid JSON is not overwritten. The zsh integration has removable markers.
+- **Searchable copies of output**: `sbs find` builds its full-text index in memory for one query and discards it. No plaintext index of tool output is written to disk.
 - **Dependency compromise**: no mandatory runtime third-party Python dependencies, no updater and no external service. The optional `tokens` extra installs tiktoken; explicitly requesting a reference count may download a public vocabulary on first use. Tool output is not uploaded.
 - **Agent hallucination / suppressed failures**: failing wrapped commands pass through their full output and original process return code. Search/excerpt routines return exact line text and file positions.
 
@@ -24,8 +26,8 @@ Open a GitHub issue with a minimal reproduction that does not expose credentials
 SBS stores complete original command outputs in a local SQLite database when a
 preview is generated; the database is **not encrypted**. Do not use a personal
 store for corporate secrets, and do not treat the heuristics as a complete
-credential detector. Recognizable private-key blocks, HTTP Authorization
-headers and credential fields bypass compression, so SBS does not create an
+credential detector. Usage counters hold sizes and tool names only. Recognizable private-key blocks, HTTP Authorization
+headers, credential fields, URLs with a password and common token formats bypass compression, so SBS does not create an
 additional receipt containing them. The original command output is still
 visible to the agent; this feature is **not** a redaction or DLP control.
 
@@ -33,7 +35,8 @@ By default SBS does **not** delete pre-existing receipts: preserving existing
 user data takes priority. To opt in to automatic expiration, set
 `SBS_RECEIPT_RETENTION_DAYS=7` (supported values 1–3650). On subsequent
 storage access, receipt rows older than the selected period are deleted.
-Project notes are not subject to this TTL. Use `sbs purge --older-than-days N`
+Project notes are not subject to this TTL. `SBS_RECEIPT_MAX_MB` opts in to a size
+limit that evicts the oldest receipts. Use `sbs purge --older-than-days N`
 to request deletion manually, and use an encrypted filesystem or the
 operating system's storage protections for sensitive local data.
 

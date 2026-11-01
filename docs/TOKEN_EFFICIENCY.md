@@ -1,24 +1,120 @@
-# Token efficiency: comparison, changes and evidence
-
-Reviewed on **2026-10-27**. This is a comparison of approaches relevant to SBS, not a universal ranking or a claim that these projects have been benchmarked head-to-head here.
+# Token efficiency: changes and evidence
 
 ## Direction for SBS
 
 Retrieve only the evidence needed, preserve diagnostic details, and measure the text actually emitted. Aggressive shortening is useful only when it does not cause the agent to miss the answer or fetch the same material again.
 
-SBS keeps its small Python core and local receipts. Version 0.2.0 adds targeted receipt recovery, more conservative automatic previews, optional reference-token counts and a repeatable regression benchmark. It does not add a mandatory proxy or an inference model.
+SBS keeps its small Python core and local receipts, with no mandatory proxy or inference model.
 
-## Relevant projects
+## Results for version 0.3.0
 
-| Project | Useful approach | What SBS takes from the comparison | Boundary |
-|:--|:--|:--|:--|
-| [RTK](https://github.com/rtk-ai/rtk) | Command-specific filters for common development output, plus measurements of filtered commands | Prefer a parser that understands a command's output over generic truncation; preserve status and diagnostic blocks | Its advertised output reductions are not measured SBS session savings. Native agent file/search tools may bypass shell filters. |
-| [Headroom](https://github.com/headroomlabs-ai/headroom) | Structured output compaction and [retrieval of original content](https://docs.headroomlabs.ai/docs/ccr) | Keep error records wherever they occur, then recover a small relevant portion of the original | Original availability and selective retrieval do not prove that every compressed answer is equivalent. Proxy/model features would expand SBS's operating requirements. |
-| [Aider](https://github.com/Aider-AI/aider) | A [repository map](https://aider.chat/docs/repomap.html) with definitions and context-relevant selection | Use symbols, search and exact excerpts before reading entire source files | A structural map guides navigation; implementation details still require exact source. SBS's AST map currently supports Python. |
-| [Repomix](https://github.com/yamadashy/repomix) | Repository packaging and optional [Tree-sitter structural compression](https://repomix.com/guide/code-compress) | Make source selection deliberate and distinguish structural overviews from exact code | Its experimental compression removes implementation details. That is useful for orientation but insufficient evidence for editing or debugging a function. |
-| [Microsoft LLMLingua](https://github.com/microsoft/LLMLingua) | Learned prompt compression, including the token-classification approach in LLMLingua-2 | A possible optional experiment for long prose after task-level evaluation | Model inference, weights, latency and potential information loss need to be included in the comparison. This is not a default dependency for SBS. |
+Measured on **2026-11-01** on a MacBook Air with Apple Silicon, Python 3.14.8, Claude Code 2.1.316 and Codex 0.166.0. Raw data: [measurements](../benchmarks/measurements-2026-11-01.json) and trial records in [`benchmarks/`](../benchmarks/). The baseline is the previous release, commit `1e35c62`.
 
-These are independently implemented SBS changes inspired by architectural ideas, not copied competitor filters. Follow each upstream project's license if incorporating its implementation later.
+**In short:** SBS clearly reduces plain, verbose command output, and no task was lost in the final trials. On real sessions whose commands were already chained and windowed it changed almost nothing. Both results are true, and which one applies depends on how the agent works.
+
+### Paired tasks on real Claude Code
+
+Six short tasks on synthetic repositories, with and without the hook, same prompt, fresh repository, no user settings, adjacent pairs in random order. Success is checked against the answer or the repository, never the model's own claim. Reproduce with `scripts/paired_runner.py` and summarize with `scripts/paired_sessions.py`.
+
+| Metric, control → SBS | Haiku 5.5, 30 pairs | Sonnet 5.5, 12 pairs |
+|:--|--:|--:|
+| Tasks passed | 30/30 → 30/30 | 12/12 → 12/12 |
+| New input tokens (input + cache write) | 359,084 → 242,644 (−32%) | 111,077 → 68,960 (−38%) |
+| Cache-read tokens | 653,435 → 564,832 (−14%) | 146,915 → 179,362 (+22%) |
+| Output tokens | 15,166 → 19,919 (+31%) | 2,873 → 3,692 (+29%) |
+| All tokens | 1,027,685 → 827,395 (−19%) | 260,865 → 252,014 (−3%) |
+| Cost reported by the client | $0.0859 → $0.0641 (−25%) | $0.4876 → $0.3306 (−32%) |
+| Pairs cheaper / dearer with SBS | 28 / 2 | 9 / 3 |
+| Tool calls | 66 → 65 | 18 → 22 |
+| Wall time | 198 s → 215 s (+9%) | 63 s → 71 s (+13%) |
+| Originals fetched back | 0 | 0 |
+
+**Read this as a favorable case.** The tasks were written to exercise the outputs SBS handles and each prompt names the command to run. They are short, the samples are small, and no significance test was run. Models wrote more and took longer with SBS. The cost is the client's own calculation, which is not a provider bill, and a subscription spends quota rather than this amount.
+
+**The first version failed.** It kept head-and-tail previews, and on "find the hash of this commit in `git log`" it passed **0 of 3** against 3 of 3 for the control. The commit sat in omitted lines, and the model answered without fetching them back. In no trial did a model use the restore route. That is why views now keep every commit and match, and why the hook no longer previews: those trials are published [as they ran](../benchmarks/paired-trials-2026-11-01-before-fix.jsonl).
+
+### Replay of real sessions
+
+`scripts/replay_transcripts.py` passes the tool results of the 260 most recent local Claude Code sessions through the hook's policy and prints totals only. It counts characters, not tokens, and it cannot show what a model would then have done.
+
+| Measure | Result |
+|:--|--:|
+| Bash output replayed | 8,846,175 characters in 3,978 calls |
+| Read output replayed | 2,949,328 characters in 949 calls |
+| Bash output in chained or piped commands | 90.6% |
+| Bash output from a command SBS recognizes | 1.1% |
+| Saved by the previous hook | 0 characters; it had stored 0 receipts since being installed |
+| Saved by the new hook | 12,550 characters: 0.14% of Bash, 0.11% of everything replayed |
+| Diagnostic lines missing from a view | 0 |
+
+These sessions came from one user whose agents window their own output, and another output filter was already active. They do not represent every setup, and they do show the limit of filtering after the fact. An agent running `cd x && a; b | head -40` has already chosen what it wants, and SBS leaves that alone.
+
+### Fidelity fixtures
+
+Characters on synthetic fixtures with `scripts/benchmark_compression.py`. Every fixture kept all its required facts and restored exactly, in both versions unless noted.
+
+| Fixture | Input | Previous | Now | Reduction |
+|:--|--:|--:|--:|--:|
+| Repetitive logs with an error | 8,416 | 891 | 918 | 89.1% |
+| JSON with a failed record in the middle | 17,133 | 578 | 605 | 96.5% |
+| Traceback, source and CSV (protected) | 28,081 | 28,081 | 28,081 | 0% |
+| pytest -v, passing, one skip and one warning | 19,660 | 19,660 | 312 | 98.4% |
+| unittest -v, passing, one skip | 17,257 | 934 | 309 | 98.2% |
+| jest, one skip | 8,380 | 701 | 209 | 97.5% |
+| Full `git log`, 120 commits | 24,020 | 604 | 16,431 | 31.6% |
+| `git status` with 300 untracked files | 7,755 | 758 | 293 | 96.2% |
+| `rg` with 500 matches in deep paths | 37,864 | 1,734 | 17,900 | 52.7% |
+| `git diff` with a huge lockfile hunk | 43,028 | 43,028 | 404 | 99.1% |
+| Colored progress overwritten in place | 25,927 | 661 | 133 | 99.5% |
+
+The `git log` and `rg` views are larger than the previous previews on purpose: those previews fit the size limit by dropping commits and matches, and the paired trials show what that costs.
+
+### Runtime cost
+
+With `scripts/benchmark_runtime.py`, medians over 25 runs, on a machine with other work running, so treat small differences as noise.
+
+| Measure | Previous | Now |
+|:--|--:|--:|
+| Python startup alone | 13.3 ms | 13.3 ms |
+| Hook, small output | 50.9 ms | 29.3 ms |
+| Hook, 400-commit log | 56.7 ms | 42.4 ms |
+| `sbs compress`, 15 MiB of logs | 1,395 ms | 1,625 ms |
+| Peak memory for those 15 MiB | 82 MB | 104 MB |
+
+The hook runs once per Bash or Grep call. The database grew to 0.3 MB in these runs, and `sbs stats` reports its size on your machine.
+
+### Targeted retrieval
+
+With `scripts/benchmark_retrieval.py` on four source trees of 35 to 876 Python and TypeScript files, 150 lookups each.
+
+| Measure | Result |
+|:--|--:|
+| `sbs symbol`, median size compared with reading the whole file | 1.0% to 6.4% |
+| Source returned exactly | 595 of 595; 5 larger symbols were reported with a route to them instead |
+| Lookup time, median | 3 to 39 ms |
+| `sbs map --ranked`, largest tree | 1.8 s |
+| JavaScript/TypeScript declarations against the TypeScript compiler, 3,476 in 360 files | recall 100%, precision 100%, end lines 100% |
+| `sbs find` across 200 receipts of 1,500 lines | right passage first in 25 of 25, 564 characters against 62,680 for the whole original |
+| `sbs find` time, median | 0.16 s with FTS5, 0.51 s with the Python ranking |
+
+These compare what the tools return. **No trial shows an agent choosing them on its own**, so they are not task savings. The ranked map has no quality evaluation beyond its tests.
+
+### Token counters
+
+The previous `sbs usage` skipped logs over 40 MB, stopped after 1,500 files without saying so and counted a response again in each log repeating it. On the test machine it read 1,500 of 5,134 Claude Code logs and 43,132 of 117,540 responses, and missed 27% of Codex input tokens. Totals will rise after updating, which is a correction rather than higher usage.
+
+### Tried and rejected after measurement
+
+| Idea | Why it was dropped |
+|:--|:--|
+| Previews of Read results | Claude Code renumbers replaced content. In a real session a model reported line 3 for line 501, for at most 0.55% of Read characters. |
+| Replacing repeated outputs with a pointer | It looked like 17% of output, but that was logs repeating results. True repeats were 5 calls and 0.04%. |
+| Folding repeats for every command | 0.15% of Bash in the replay, against a stated rule that unrecognized output stays unchanged. Colors and overwritten progress are still removed. |
+| Head-and-tail previews in the hook | Lost a task every time it mattered, as above. Available through `SBS_COMPRESS_ALL=1` and `sbs run`. |
+| Codex `PostToolUse` with `decision: block` | Removes the exit status from what the model sees, and Codex records an error. |
+| A persistent full-text index of receipts | It would keep readable copies of tool output on disk. Building the index per query took 0.16 s. |
+| A native parser dependency for JavaScript and TypeScript | The built-in tokenizer matched the TypeScript compiler on the test corpus. |
+
 
 ## Why output reduction is not a billing result
 
@@ -58,9 +154,9 @@ The optional counter uses `o200k_base` or `cl100k_base`, counts literal special-
 
 These are reference encodings, not automatically the tokenizer of the user's current agent model. No provider request, billing or quota is measured. Core operation needs no third-party runtime dependency; first explicit use of a tokenizer may download its public vocabulary, without uploading input text.
 
-## Measured comparison
+## Version 0.2.0 comparison
 
-The local synthetic benchmark compares the clean baseline commit [`ae5fcf4`](https://github.com/searadacunha/Stop-Bullshiting/commit/ae5fcf481284e109d1ac1d92cd56b5292636a628) with the 0.2.0 working changes. Both use auto mode, the same six fixtures, a 3,500-character target, a 1,400-character threshold and minimum character gain of 12%. Python was 3.12.14 and tiktoken was 0.14.0 using `o200k_base`.
+This section records version 0.2.0. The local synthetic benchmark compares the clean baseline commit [`ae5fcf4`](https://github.com/searadacunha/Stop-Bullshiting/commit/ae5fcf481284e109d1ac1d92cd56b5292636a628) with the 0.2.0 working changes. Both use auto mode, the same six fixtures, a 3,500-character target, a 1,400-character threshold and minimum character gain of 12%. Python was 3.12.14 and tiktoken was 0.14.0 using `o200k_base`.
 
 The table uses the median of three counts for each emitted output. Actual receipt creation is enabled; receipt identifiers are deterministic per fixture and repetition, and the visible restoration command is included. Different identifiers can tokenize differently. The repetitions check consistent behavior on the same inputs; they are not independent agent tasks.
 
@@ -105,10 +201,8 @@ The script uses temporary receipt storage and isolated subprocesses for each che
 
 ## Next improvements, in priority order
 
-1. **Measure actual coverage and recovery overhead.** Count unchanged/bypassed calls as well as compressed calls, and track how often agents retrieve more information. Keep local accounting separate from observed provider counters. The useful target is total work per successful task.
-2. **Add a few command-aware filters based on observed workloads.** Test tools such as pytest or Git using real fixture transcripts. Preserve failed test names, diagnostic blocks, file paths and original process status. Avoid changing the original command's semantics just to obtain a shorter result. This does not require broadening hook approval permissions.
-3. **Improve task-relevant source navigation.** Rank candidate symbols/files and retrieve exact implementations on demand. Add additional language support only with a deliberate dependency and maintenance decision.
-4. **Run paired agent-task trials.** Use the same model, agent version, repository snapshots and task scoring. Randomize order, control/document cache conditions, repeat trials and record input/output/cached/reasoning tokens where available, paid cost, elapsed time, restores and task success. Publish failures as well as gains.
-5. **Evaluate learned prose compression only after that baseline exists.** Keep it optional, exclude source/diagnostics by default, and include local inference overhead and answer quality in the decision.
+1. **Trials on real repositories and longer tasks.** The paired trials use short synthetic tasks. Rerun them on real work, on the models people actually use.
+2. **Measure whether agents use the retrieval tools.** `sbs symbol` and `sbs find` return far less than a whole file, but no trial yet shows an agent choosing them on its own. Read is about a quarter of replayed tool output, and SBS cannot reduce it after the fact.
+3. **Make omitted content easier to fetch back.** Models did not use the restore route once in the trials. Wording, or returning the right passage up front, may matter more than any filter.
 
-No numeric session-saving target is claimed until those task-level trials exist.
+No general session-saving figure is claimed.

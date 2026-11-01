@@ -4,10 +4,15 @@ on:
   pull_request:
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: macos-latest
+            python-version: "3.12"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,8 +29,10 @@ jobs:
           sbs --version
           sbs doctor
           sbs bench
+          sbs map src --ranked --budget 800
+          sbs def compress src
       - name: Reference tokenizer and fidelity benchmark
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
         run: |
           python -m pip install '.[tokens]'
           sbs bench --tokenizer o200k_base
@@ -39,5 +46,5 @@ jobs:
               assert case['restoration_exact_every_run'], case['name']
               assert all(s['present_in_every_preview'] for s in case['sentinels'].values()), case['name']
               assert all(s['reported_visible_chars_match'] for s in case['samples']), case['name']
-          print('All six auto-mode fixtures preserve their sentinels and exact originals.')
+          print(f"All {len(report['cases'])} fixtures preserve their sentinels and exact originals.")
           PY

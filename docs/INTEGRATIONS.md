@@ -6,38 +6,51 @@ fixtures used by this project; they are not an end-to-end compatibility matrix.
 output replacement. The explicit `sbs run -- <command>` workflow is independent
 of hook support.
 
-## Documented contracts
+## Verified against installed clients
 
-Checked against upstream documentation on **2026-10-27**:
+Run on **2026-11-01** with the real binaries, not simulated events.
 
-| Client | Contract used by SBS | Primary reference |
+| Check | Claude Code 2.1.316 | Codex 0.166.0 |
 |:--|:--|:--|
-| Claude Code | `PostToolUse.updatedToolOutput` with the structured Bash response shape | [Claude Code hooks reference](https://code.claude.com/docs/en/hooks#posttooluse-decision-control) |
-| Codex | `PreToolUse`, canonical hook name `Bash`, `permissionDecision: allow` with `updatedInput.command` | [Codex hooks](https://developers.openai.com/codex/hooks) |
+| Route used by SBS | `PostToolUse` with `updatedToolOutput` | `PreToolUse` with `permissionDecision: allow` and `updatedInput.command` |
+| The model receives the replacement | Yes, for Bash, Grep, Read and Glob | Yes |
+| A failing command | `PostToolUseFailure` fires instead, so SBS never touches it | Runs through the wrapper, which passes failures through unchanged |
+| Exit status stays visible | Yes | Yes, in Codex's own output envelope |
+| A permission rule still applies | SBS emits no permission decision | Only because SBS skips commands named by a rule: see below |
 
-These are documented interfaces, not a claim that the user's installed client
-version has been tested. Older versions can differ.
+Claude Code was run with `claude -p` and a cheap model. Codex was run through `scripts/e2e_codex.py`: a throwaway `CODEX_HOME`, a scripted local model, no account, and the hook approved the normal way, so the script records exactly what a model would receive. Other client versions can differ. `sbs doctor` shows which hooks are wired and `sbs stats` shows what they changed.
+
+Documented contracts: [Claude Code hooks](https://code.claude.com/docs/en/hooks#posttooluse-decision-control), [Codex hooks](https://developers.openai.com/codex/hooks).
 
 ## Claude Code
 
-Run `sbs setup claude`. The installer merges one `PostToolUse` / `Bash` command hook into `~/.claude/settings.json`. It does not alter `permissions`, credentials or model settings. Claude Code versions supporting `updatedToolOutput` can replace model-visible `stdout` for eligible large, successfully completed Bash results. Stderr is preserved and the source tool has already run.
+Run `sbs setup claude`. The installer merges one `PostToolUse` command hook with the matcher `Bash|Grep` into `~/.claude/settings.json`. It does not alter `permissions`, credentials or model settings. Replacing a result grants nothing: the tool has already run, and stderr is preserved.
 
-The hook defaults to a narrow read-only command allowlist: `git status/log/diff/show/ls-files`, `rg`, `grep`, and `ls`. Arbitrary commands can be explicitly allowed with `SBS_COMPRESS_ALL=1`, but this is **not recommended**: model-critical data can be truncated. Disabling the hook is safer than attempting to compress binary or security-sensitive output.
+| Tool | What the hook does |
+|:--|:--|
+| Bash | Applies a command-aware view when the program is recognized, including after `cd` and through `head` or `tail`. Allowlisted read-only commands also lose repeated lines and JSON spacing. Any command loses terminal colors and overwritten progress. Everything else stays unchanged. |
+| Grep | Groups `content` results by file, printing each path once. |
+| Read | Never changed. Claude Code numbers replaced content from line 1, and in a real session a model reported line 3 for a line that was really line 501. |
+| Glob | Never changed: its result is a list of paths, and each one is a fact. |
 
-If the hook response is not compatible with your installed Claude Code version, the application continues normally. Test first with `sbs doctor` and a disposable project.
+`SBS_COMPRESS_ALL=1` adds head-and-tail previews for every command. It is **not recommended**: in paired trials models did not fetch omitted lines back and answered wrongly instead. Commands run through a wrapper such as `rtk` are recognized, but SBS can only restore what it received.
 
 ## Codex
 
 Run `sbs setup codex`. The installer merges one `PreToolUse` / `Bash` command hook into `~/.codex/hooks.json`. The hook accepts only recognized read-only shell commands without redirects, pipelines, substitutions or shell operators, and rewrites them to `python -m stop_bullshiting shell '<original command>'`.
 
-Then open **`/hooks` in Codex** to review and trust the exact new or changed hook.
-Current Codex documentation states that unreviewed non-managed hooks are skipped;
-writing `hooks.json` does not by itself activate the hook. SBS does not bypass
-that trust review.
+Then open **`/hooks` in Codex** to review and trust the exact new or changed hook. Unreviewed non-managed hooks are skipped, so writing `hooks.json` does not activate it. SBS does not bypass that trust review.
 
-The wrapper parses the arguments with `shlex`, executes via `subprocess` (no nested shell), retains the original exit code, leaves failures unchanged and stores complete original output locally if it is reduced. For unsupported commands it emits no hook action.
+Measured behavior of this route:
 
-Codex `PreToolUse` input rewrites involve `permissionDecision: allow`, so the allowlist must not be expanded to commands that modify data or need interactive approval. If your Codex version does not support this hook schema, use `sbs run` explicitly instead.
+- **Exec-policy rules:** Codex checks them against the rewritten command, so a `forbidden` rule on `git log` did not fire once the command was wrapped. SBS now leaves a command alone when any rule file names its program, or when a rule file cannot be read.
+- **Sandbox:** `allow` did not widen it. A rewritten write in a read-only sandbox was refused.
+- **Reduction depends on the sandbox.** With no temporary directory (read-only), the wrapper runs the command directly. With a store outside the writable roots (workspace-write, default state directory), output stays whole and stderr carries one `Reduction unavailable` line. Reduction happens only with full access or a writable `SBS_HOME`.
+- **Tool coverage:** the hook sees `exec_command` calls. Sessions driving tools through Codex's JavaScript code mode did not reach it: 0 such calls in the 120 most recent sessions on the test machine.
+
+`PostToolUse` with `decision: "block"` can also replace a Codex result without a rewrite. SBS does not use it: `tool_response` is plain text with no exit status, the replacement removes the `Process exited with code N` envelope, and Codex records the call as an error.
+
+If your Codex version does not support this hook schema, use `sbs run` explicitly instead, or the MCP server.
 
 ## Shell logo
 
@@ -54,7 +67,7 @@ lines are left in place. Open a new terminal for changes to take effect.
 
 `sbs mcp` runs stdio JSON-RPC with no network listener. Tools are explicit and bounded. The server does not mutate an agent configuration or automatically intercept other MCP responses.
 
-The 7 tools provide text compaction/restore, source navigation, and local project notes. `sbs_read` always yields exact line contents.
+The 12 tools provide text compaction/restore, ranked receipt search, source navigation, and local project notes. Read-only tools carry the `readOnlyHint` annotation. `sbs_read` and `sbs_symbol_source` always yield exact line contents. `sbs_references` matches names without resolving scope and says so in its answer.
 
 `sbs_restore` accepts a receipt ID and optional `start`, `end`, `query`, `context` (default 2) and `limit` (default 50) arguments. Ranges are 1-based and inclusive; queries are case-sensitive literals. Selected lines retain their exact contents with line numbers added. Responses include counts and explicit omission notices, and never cut an oversized line silently.
 

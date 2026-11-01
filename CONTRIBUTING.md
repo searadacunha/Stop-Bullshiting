@@ -8,5 +8,6 @@ Please keep the project offline-first, reversible, testable and dependency-light
 4. Never claim actual token savings based on character-length reductions. Benchmark against agent usage counters separately.
 5. Avoid changing users' authentication or adding background services.
 6. Do not submit vendor code without checking and preserving applicable license attribution.
+7. A hook change needs a run against the real client: `scripts/e2e_codex.py` for Codex (no account needed), and a short `claude -p` session for Claude Code.
 
 The core implementation is intentionally self-contained.
