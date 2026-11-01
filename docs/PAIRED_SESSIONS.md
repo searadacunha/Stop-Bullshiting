@@ -26,21 +26,21 @@ results. No API calls or paid agent tasks are initiated by this script.
 
 One line per task, repetition and condition:
 
-\`\`\`json
+```json
 {"task_id":"fix-case-01","repeat":0,"variant":"control","success":true,"model":"MODEL-ID","task_revision":"v1","repository_sha":"COMMIT-SHA","tokens_total":null,"cost_usd":null,"tool_calls":null,"restore_calls":null,"elapsed_seconds":null,"errors":null}
-\`\`\`
+```
 
 This is a **schema illustration**, not an observed trial.
 
-\`\`\`sh
+```sh
 python scripts/paired_sessions.py /path/to/redacted-real-trials.jsonl
 python scripts/paired_sessions.py /path/to/redacted-real-trials.jsonl --output /path/to/report.json
 python -m unittest tests.test_paired_sessions -v
-\`\`\`
+```
 
 The script validates inputs, pairs by task and repetition, refuses conflicting
 model/commit metadata, excludes unmatched trials from paired comparisons and
-reports coverage per metric. Missing values remain \`null\`, not zero.
+reports coverage per metric. Missing values remain `null`, not zero.
 The output warns that task equivalence and reported metrics were not independently
 verified. It does not calculate p-values or infer causation from tiny samples.
 
