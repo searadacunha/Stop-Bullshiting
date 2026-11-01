@@ -43,6 +43,27 @@ class PairedSessionsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Non-equivalent pair"):
             paired.summarize([row, trial("x", 0, "sbs", True, model="other")])
 
+    def test_pairs_without_provenance_do_not_influence_results(self):
+        rows = [
+            trial("valid", 0, "control", False, tokens_total=100),
+            trial("valid", 0, "sbs", True, tokens_total=90),
+            trial("unverifiable", 0, "control", True, tokens_total=1000),
+            {**trial("unverifiable", 0, "sbs", True, tokens_total=1),
+             "repository_sha": None},
+        ]
+        result = paired.summarize(rows)
+        self.assertEqual(result["complete_pairs"], 1)
+        self.assertEqual(result["pairs_missing_comparability_metadata"], 1)
+        self.assertEqual(result["success"], {"control": 0, "sbs": 1, "n_each": 1})
+        self.assertEqual(result["metrics"]["tokens_total"]["mean_delta_sbs_minus_control"], -10)
+        self.assertEqual(result["excluded_noncomparable_pairs"][0]["task_id"], "unverifiable")
+
+    def test_all_pairs_missing_provenance_are_rejected(self):
+        a = trial("unknown", 0, "control", True)
+        b = {**trial("unknown", 0, "sbs", True), "model": ""}
+        with self.assertRaisesRegex(ValueError, "No comparable"):
+            paired.summarize([a, b])
+
     def test_jsonl_parsing_validates_missing_and_invalid_metrics(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "runs.jsonl"
@@ -51,7 +72,9 @@ class PairedSessionsTests(unittest.TestCase):
             self.assertEqual(paired.read_trials(path)[0]["cost_usd"], 0.004)
             for invalid in [trial("a", 0, "control", True, tool_calls=True),
                             trial("a", 0, "control", True, tokens_total=-2),
-                            {**trial("a", 0, "control", True), "success": 1}]:
+                            {**trial("a", 0, "control", True), "success": 1},
+                            {**trial("a", 0, "control", True), "model": 42},
+                            {**trial("a", 0, "control", True), "repository_sha": ""}]:
                 path.write_text(json.dumps(invalid) + "\n", encoding="utf-8")
                 with self.assertRaises(ValueError):
                     paired.read_trials(path)

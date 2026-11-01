@@ -39,8 +39,10 @@ python -m unittest tests.test_paired_sessions -v
 ```
 
 The script validates inputs, pairs by task and repetition, refuses conflicting
-model/commit metadata, excludes unmatched trials from paired comparisons and
-reports coverage per metric. Missing values remain `null`, not zero.
+model/commit metadata, excludes unmatched trials **and any complete pair missing
+model, task revision or repository SHA** from paired comparisons. Pairs that
+claim different values for those fields fail with an error. Missing values
+remain `null`, not zero. The report lists excluded pairs explicitly.
 The output warns that task equivalence and reported metrics were not independently
 verified. It does not calculate p-values or infer causation from tiny samples.
 
