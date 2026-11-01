@@ -39,20 +39,20 @@ class CompressionTests(unittest.TestCase):
 
     def test_private_key_and_credentials_are_never_stored(self):
         cases = (
-            "-----BEGIN PRIVATE KEY-----\\nexample\\n-----END PRIVATE KEY-----",
+            "-----BEGIN PRIVATE KEY-----\nexample\n-----END PRIVATE KEY-----",
             "Authorization: Bearer " + "a" * 42,
             '{"access_token":"' + "b" * 42 + '"}',
         )
         for secret in cases:
             with self.subTest(secret=secret[:28]):
-                original = "INFO startup\\n" * 200 + secret + "\\n" + "INFO complete\\n" * 200
+                original = "INFO startup\n" * 200 + secret + "\n" + "INFO complete\n" * 200
                 item = compress(original, mode="logs", minimum=0)
                 self.assertEqual(item.text, original)
                 self.assertIsNone(item.receipt)
         self.assertEqual(report()["receipts"], 0)
 
     def test_opt_in_receipt_retention_preserves_notes(self):
-        body = "INFO repeated line\\n" * 600
+        body = "INFO repeated line\n" * 600
         old = compress(body, mode="logs", minimum=0, max_len=1000)
         self.assertIsNotNone(old.receipt)
         note_put("project", "keep", "notes are not receipts")
@@ -68,7 +68,7 @@ class CompressionTests(unittest.TestCase):
             self.assertEqual(note_get("project", "keep"), "notes are not receipts")
 
     def test_invalid_retention_does_not_modify_store(self):
-        body = "INFO entry\\n" * 400
+        body = "INFO entry\n" * 400
         saved = compress(body, mode="logs", minimum=0, max_len=1000)
         with patch.dict(os.environ, {"SBS_RECEIPT_RETENTION_DAYS": "-1"}):
             with self.assertRaises(ValueError):
