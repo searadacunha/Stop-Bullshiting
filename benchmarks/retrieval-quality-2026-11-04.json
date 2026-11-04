@@ -6,7 +6,7 @@
   "current": {
     "version": "0.3.1",
     "sources_sha256": {
-      "search.py": "7fa0bf226f76509a77a31844f2d02dc68ebcd7a236d2af5179032ccde4b46114",
+      "search.py": "25e9f3c11ec9ee57d1032cc3633586182d4326704e9b3c44d920f5a119194560",
       "receipts.py": "4c08fa488e45d25fad51e83713dc851a3262a61ac7a32b5f0e273607b39d3748",
       "store.py": "f67fad1e3c61ece181147d5fee03fa0e89f4560c7bfc9357c0d37b824cf627ea"
     },

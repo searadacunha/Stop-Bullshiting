@@ -171,6 +171,25 @@ def find(query: str, *, limit: int = 5, receipts: int = 200, max_bytes: int = 64
                         "end": start + max(matched, default=body.count("\n")) + 1})
     result = {"query": query, "engine": engine, "searched_chunks": len(chunks), "hits": [],
               "coverage": coverage, "omitted_passages": omitted, "max_chars": max_chars}
+    # No omission notice is needed when all complete passages fit together.
+    # Reserving one greedily can otherwise exclude an early, longer header even
+    # though the eventual response without that notice is within the budget.
+    complete = {**result, "hits": [], "omitted_passages": []}
+    for index, score, matched in ranked:
+        identifier, stamp, source, start, body = chunks[index]
+        last = start + body.count("\n") + 1
+        numbered_size = len(body) + sum(len(str(line)) + 2 for line in range(start + 1, last + 1))
+        if not matched or numbered_size > max_chars:
+            break  # Do not allocate an oversized numbered copy just to test its length.
+        complete["hits"].append({"receipt": identifier, "timestamp": stamp, "source": source,
+                                 "start": start + 1, "end": last, "score": round(score, 3),
+                                 "text": "\n".join(f"{start + offset + 1}: {line}"
+                                                   for offset, line in enumerate(body.split("\n")))})
+        if len(render(complete)) > max_chars:
+            break
+    else:
+        count_event("find", "find")
+        return complete
     # Reserve the notice for all still-hidden matches. A later omission must not
     # force us to truncate or discard an exact passage already selected.
     for position, (index, score, matched) in enumerate(ranked):

@@ -63,6 +63,23 @@ class SearchBudgetTests(unittest.TestCase):
                         self.assertIn("TARGET", hit["text"])
                         self.assertExact(hit, get_receipt(hit["receipt"]))
 
+    def test_complete_results_are_not_displaced_by_an_unneeded_omission_notice(self):
+        short = self.save("TARGET", source="x")
+        long_header = self.save("TARGET", source="s" * 160)
+        for use_fts in (True, False):
+            with self.subTest(use_fts=use_fts):
+                result = find("TARGET", limit=2, max_chars=256, use_fts=use_fts)
+                self.assertEqual([hit["receipt"] for hit in result["hits"]], [long_header, short])
+                self.assertEqual(result["omitted_passages"], [])
+                self.assertLessEqual(len(render(result)), 256)
+                for hit in result["hits"]:
+                    self.assertExact(hit, "TARGET")
+                # Adding scope metadata makes these same complete hits too big:
+                # the fast path must still account for every rendered character.
+                scoped = find("TARGET", limit=2, receipts=2, max_chars=256, use_fts=use_fts)
+                self.assertIn("scope: most recent 2 receipts", render(scoped))
+                self.assertLessEqual(len(render(scoped)), 256)
+
     def test_oversized_match_is_explicit_and_original_is_recoverable(self):
         original = "TARGET " + "x" * 2000
         identifier = self.save(original)
