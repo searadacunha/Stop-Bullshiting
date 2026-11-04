@@ -11,6 +11,7 @@
 - Read original blobs individually and bound decompression for search, without keeping a SQLite read cursor open while results are yielded.
 - Add targeted regression tests and a reproducible comparison script, `scripts/benchmark_retrieval_quality.py`.
 - Document the design comparison with RTK, context-mode, Aider, Repomix and Serena in [RETRIEVAL_QUALITY.md](docs/RETRIEVAL_QUALITY.md).
+- Pin the macOS installer to the reviewed 0.3.1 source commit.
 
 ## 0.3.0 — 2026-11-01
 
