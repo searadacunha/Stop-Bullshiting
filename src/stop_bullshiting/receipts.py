@@ -16,8 +16,8 @@ def select_receipt(text: str, *, start: int | None = None, end: int | None = Non
     Ranges are 1-based and inclusive. A literal, case-sensitive query searches
     within that range; overlapping context windows are merged. ``limit`` bounds
     the number of selected source lines considered, including oversized lines.
-    Queries prioritize matching lines, then nearby context, within that limit;
-    retained lines are emitted in their original source order.
+    Queries prioritize matching lines, then nearby context, within both the line
+    and character budgets; retained lines are emitted in original source order.
     ``max_chars`` bounds the entire response, including metadata. A source line
     that cannot fit is identified as omitted rather than silently shortened.
 
@@ -65,24 +65,26 @@ def select_receipt(text: str, *, start: int | None = None, end: int | None = Non
                 intervals.append((left, right))
 
     selected = sum(right - left for left, right in intervals)
+    priority: list[int] = []
     if matching_indices:
         # Reserve the line budget for actual matches before their neighbours.
         # Add nearer context first, deduplicate overlapping windows, then put
         # the retained indices back in source order for exact presentation.
-        chosen = set(matching_indices[:limit])
+        priority = matching_indices[:limit]
+        chosen = set(priority)
         target = min(limit, selected)
         for distance in range(1, min(context, high - low) + 1):
             if len(chosen) >= target:
                 break
             for index in matching_indices:
                 for neighbor in (index - distance, index + distance):
-                    if low <= neighbor < high:
+                    if low <= neighbor < high and neighbor not in chosen:
                         chosen.add(neighbor)
+                        priority.append(neighbor)
                     if len(chosen) >= target:
                         break
                 if len(chosen) >= target:
                     break
-        intervals = [(index, index + 1) for index in sorted(chosen)]
     shown = 0
     rows: list[str] = []
     used_chars = 0
@@ -97,6 +99,49 @@ def select_receipt(text: str, *, start: int | None = None, end: int | None = Non
         if count == selected:
             return ""
         return "[SBS omitted: narrow start/end/query, or use sbs show for the original.]\n"
+
+    if matching_indices:
+        # Source order is the presentation order, not the allocation order:
+        # otherwise a long line of leading context can consume the entire
+        # response before the match. Consider matches first, including short
+        # later matches when an earlier one does not fit, then nearby context.
+        retained: dict[int, str] = {}
+
+        def row_size(index: int) -> int:
+            original = lines[index]
+            return len(str(index + 1)) + 2 + len(original) + (not original.endswith("\n"))
+
+        def source_row(index: int) -> str:
+            original = lines[index]
+            return f"{index + 1}: " + original + ("" if original.endswith("\n") else "\n")
+
+        # If the complete selection fits, no omission guidance is needed. Check
+        # this up front so that reserving guidance cannot itself hide a match.
+        if len(priority) == selected and sum(map(row_size, priority)) + len(metadata(selected)) <= max_chars:
+            return metadata(selected) + "".join(source_row(index) for index in sorted(priority))
+
+        match_count = min(limit, len(matching_indices))
+        for candidates in (priority[:match_count], priority[match_count:]):
+            oversized: list[int] = []
+            for index in candidates:
+                cost = row_size(index)
+                overhead = len(metadata(shown + 1)) + len(guidance(shown + 1))
+                if used_chars + cost + overhead <= max_chars:
+                    retained[index] = source_row(index)
+                    used_chars += cost
+                    shown += 1
+                elif cost + len(metadata(1)) + len(guidance(1)) > max_chars:
+                    oversized.append(index)
+            # Omission markers must not crowd out other matching lines. They
+            # precede context in the allocation order, and identify only lines
+            # too large for an otherwise empty, annotated response.
+            for index in oversized:
+                marker = (f"[SBS line {index + 1} omitted: {len(lines[index])} chars "
+                          f"plus numbering/metadata exceed budget={max_chars}.]\n")
+                if used_chars + len(marker) + len(metadata(shown)) + len(guidance(shown)) <= max_chars:
+                    retained[index] = marker
+                    used_chars += len(marker)
+        return metadata(shown) + "".join(retained[index] for index in sorted(retained)) + guidance(shown)
 
     considered = 0
     for left, right in intervals:

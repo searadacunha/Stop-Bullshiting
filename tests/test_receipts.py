@@ -58,6 +58,81 @@ class ReceiptSelectionTests(unittest.TestCase):
         self.assertEqual(source_numbers(view), [2, 4])
         self.assertIn("match_lines=2", view)
 
+    def test_character_budget_reserves_the_match_before_long_leading_context(self):
+        lines = ["context " + "x" * 180 + "\n"] * 3
+        lines += ["ERROR_TARGET important exact evidence\n"]
+        lines += ["context " + "y" * 180 + "\n"] * 3
+        view = select_receipt("".join(lines), query="ERROR_TARGET", context=2, max_chars=512)
+        self.assertLessEqual(len(view), 512)
+        self.assertIn("4: ERROR_TARGET important exact evidence\n", view)
+        numbers = source_numbers(view)
+        self.assertEqual(numbers, sorted(set(numbers)))
+        self.assertIn(f"shown_lines={len(numbers)}", view)
+        self.assertIn(f"omitted_lines={len(lines) - len(numbers)}", view)
+        self.assertIn("match_lines=1", view)
+        for number in numbers:
+            self.assertIn(f"{number}: {lines[number - 1]}", view)
+
+    def test_character_budget_keeps_multiple_matches_before_any_context(self):
+        context = "unneeded context " + "x" * 180 + "\n"
+        view = select_receipt(context + "needle A\n" + context + "needle B\n" + context,
+                              query="needle", context=2, max_chars=300)
+        self.assertLessEqual(len(view), 300)
+        self.assertEqual(source_numbers(view), [2, 4])
+        self.assertIn("2: needle A\n", view)
+        self.assertIn("4: needle B\n", view)
+        self.assertIn("shown_lines=2", view)
+        self.assertIn("omitted_lines=3", view)
+
+    def test_oversized_match_does_not_hide_a_later_short_match(self):
+        original = "needle " + "x" * 1000 + "-EXACT-END\nneedle short\n"
+        view = select_receipt(original, query="needle", context=0, max_chars=350)
+        self.assertLessEqual(len(view), 350)
+        self.assertIn("SBS line 1 omitted:", view)
+        self.assertNotIn("1: needle", view)
+        self.assertNotIn("-EXACT-END", view)
+        self.assertIn("2: needle short\n", view)
+        self.assertEqual(source_numbers(view), [2])
+        self.assertIn("match_lines=2", view)
+        self.assertIn("shown_lines=1", view)
+
+    def test_later_short_match_can_use_budget_left_after_an_earlier_match(self):
+        long_match = "needle " + "x" * 175 + "\n"
+        view = select_receipt(long_match + long_match + "needle short\n",
+                              query="needle", context=0, max_chars=400)
+        self.assertLessEqual(len(view), 400)
+        self.assertEqual(source_numbers(view), [1, 3])
+        self.assertIn("3: needle short\n", view)
+        self.assertIn("shown_lines=2", view)
+        self.assertIn("match_lines=3", view)
+        # Line 2 could fit alone; only the remaining space was insufficient.
+        self.assertNotIn("SBS line 2 omitted:", view)
+
+    def test_complete_query_selection_does_not_reserve_unneeded_omission_guidance(self):
+        original = "needle " + "x" * 275 + "\ncontext\n"
+        view = select_receipt(original, query="needle", context=1, max_chars=400)
+        self.assertLessEqual(len(view), 400)
+        self.assertEqual(source_numbers(view), [1, 2])
+        self.assertIn("shown_lines=2", view)
+        self.assertIn("omitted_lines=0", view)
+        self.assertNotIn("SBS omitted", view)
+
+    def test_query_priority_preserves_unicode_whitespace_and_crlf(self):
+        original = "x" * 400 + "\r\n  needle café λ\t  \r\nlast\r\n"
+        view = select_receipt(original, query="needle", context=1, max_chars=300)
+        self.assertLessEqual(len(view), 300)
+        self.assertIn("2:   needle café λ\t  \r\n", view)
+        self.assertIn("match_lines=1", view)
+
+    def test_oversized_query_match_still_consumes_the_line_limit(self):
+        view = select_receipt("needle " + "x" * 1000 + "\nneedle short\n",
+                              query="needle", context=0, limit=1, max_chars=350)
+        self.assertLessEqual(len(view), 350)
+        self.assertIn("SBS line 1 omitted:", view)
+        self.assertNotIn("2: needle short", view)
+        self.assertIn("shown_lines=0", view)
+        self.assertIn("match_lines=2", view)
+
     def test_overlapping_context_windows_are_merged_once(self):
         view = select_receipt("one\nneedle A\nthree\nneedle B\nfive\nsix\n", query="needle", context=1)
         self.assertEqual(source_numbers(view), [1, 2, 3, 4, 5])

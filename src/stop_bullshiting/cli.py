@@ -250,6 +250,8 @@ def build_parser() -> argparse.ArgumentParser:
     found.add_argument("query")
     found.add_argument("--limit", type=int, default=5)
     found.add_argument("--receipts", type=int, default=200, help="How many recent receipts to search")
+    found.add_argument("--max-chars", type=int, default=6000,
+                       help="Total text response budget, including headings and notices (minimum: 256)")
     found.add_argument("--json", action="store_true")
     define = sub.add_parser("def", help="Find where a symbol is declared")
     define.add_argument("name")
@@ -349,8 +351,15 @@ def main(argv: list[str] | None = None) -> int:
                 for line in symbol_map(Path(args.path), name_filter=args.name, limit=args.limit):
                     print(line)
         elif args.cmd == "find":
-            result = find_receipts(args.query, limit=args.limit, receipts=args.receipts)
-            print(json.dumps(result, indent=2, ensure_ascii=False) if args.json else render_receipts(result))
+            result = find_receipts(args.query, limit=args.limit, receipts=args.receipts, max_chars=args.max_chars)
+            if args.json:
+                # The budget applies to the rendered text, not the JSON envelope.
+                print(json.dumps(result, indent=2, ensure_ascii=False))
+            else:
+                view = render_receipts(result)
+                sys.stdout.write(view)
+                if not view.endswith("\n") and len(view) < args.max_chars:
+                    sys.stdout.write("\n")
         elif args.cmd == "def":
             found = definitions(args.name, Path(args.path))
             for item in found:

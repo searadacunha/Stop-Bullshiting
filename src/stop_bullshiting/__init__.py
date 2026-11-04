@@ -1,3 +1,3 @@
 """Stop-Bullshiting: opt-in, local-first reduction of model-visible tool output."""
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"

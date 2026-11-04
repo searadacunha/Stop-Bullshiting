@@ -1,0 +1,362 @@
+{
+  "schema_version": 1,
+  "fixture_set": "retrieval-quality-v1",
+  "scope": "Targeted synthetic regression fixtures, not general search accuracy or token savings.",
+  "python": "3.12.14",
+  "current": {
+    "version": "0.3.1",
+    "sources_sha256": {
+      "search.py": "25e9f3c11ec9ee57d1032cc3633586182d4326704e9b3c44d920f5a119194560",
+      "receipts.py": "4c08fa488e45d25fad51e83713dc851a3262a61ac7a32b5f0e273607b39d3748",
+      "store.py": "f67fad1e3c61ece181147d5fee03fa0e89f4560c7bfc9357c0d37b824cf627ea"
+    },
+    "passed_cases": 9,
+    "total_cases": 9,
+    "cases": [
+      {
+        "name": "ordinary_match",
+        "requested_engine": "python",
+        "actual_engine": "python",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 228,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": {
+          "considered_receipts": 1,
+          "searched_receipts": 1,
+          "searched_bytes": 38,
+          "skipped_receipts": 0,
+          "receipt_limit": 200,
+          "byte_limit": 4096
+        }
+      },
+      {
+        "name": "match_after_long_context",
+        "requested_engine": "python",
+        "actual_engine": "python",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 209,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": {
+          "considered_receipts": 1,
+          "searched_receipts": 1,
+          "searched_bytes": 2026,
+          "skipped_receipts": 0,
+          "receipt_limit": 200,
+          "byte_limit": 4096
+        }
+      },
+      {
+        "name": "older_match_after_oversized_receipt",
+        "requested_engine": "python",
+        "actual_engine": "python",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 253,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": {
+          "considered_receipts": 2,
+          "searched_receipts": 1,
+          "searched_bytes": 22,
+          "skipped_receipts": 1,
+          "receipt_limit": 200,
+          "byte_limit": 1000
+        }
+      },
+      {
+        "name": "whole_response_budget",
+        "requested_engine": "python",
+        "actual_engine": "python",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 504,
+        "response_budget": 512,
+        "hits": 2,
+        "coverage": {
+          "considered_receipts": 5,
+          "searched_receipts": 5,
+          "searched_bytes": 90,
+          "skipped_receipts": 0,
+          "receipt_limit": 200,
+          "byte_limit": 4096
+        }
+      },
+      {
+        "name": "ordinary_match",
+        "requested_engine": "fts5",
+        "actual_engine": "fts5",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 228,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": {
+          "considered_receipts": 1,
+          "searched_receipts": 1,
+          "searched_bytes": 38,
+          "skipped_receipts": 0,
+          "receipt_limit": 200,
+          "byte_limit": 4096
+        }
+      },
+      {
+        "name": "match_after_long_context",
+        "requested_engine": "fts5",
+        "actual_engine": "fts5",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 209,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": {
+          "considered_receipts": 1,
+          "searched_receipts": 1,
+          "searched_bytes": 2026,
+          "skipped_receipts": 0,
+          "receipt_limit": 200,
+          "byte_limit": 4096
+        }
+      },
+      {
+        "name": "older_match_after_oversized_receipt",
+        "requested_engine": "fts5",
+        "actual_engine": "fts5",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 253,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": {
+          "considered_receipts": 2,
+          "searched_receipts": 1,
+          "searched_bytes": 22,
+          "skipped_receipts": 1,
+          "receipt_limit": 200,
+          "byte_limit": 1000
+        }
+      },
+      {
+        "name": "whole_response_budget",
+        "requested_engine": "fts5",
+        "actual_engine": "fts5",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 504,
+        "response_budget": 512,
+        "hits": 2,
+        "coverage": {
+          "considered_receipts": 5,
+          "searched_receipts": 5,
+          "searched_bytes": 90,
+          "skipped_receipts": 0,
+          "receipt_limit": 200,
+          "byte_limit": 4096
+        }
+      },
+      {
+        "name": "literal_restore_prioritizes_match",
+        "checks": {
+          "matching_line_visible": true,
+          "rendered_response_within_budget": true
+        },
+        "passed": true,
+        "response_chars": 394,
+        "response_budget": 512
+      }
+    ]
+  },
+  "baseline": {
+    "version": "0.3.0",
+    "sources_sha256": {
+      "search.py": "45e9d7fe28392ba1f570d86dfe357f995a56ae21897e932607d2575bd5ed6529",
+      "receipts.py": "611ff6e49c0fd8f6826334e26bd9d26074f0f052a6a125fd0b18af1bdfad3ab9",
+      "store.py": "4716b3c8e532b4d5e5aad63a078f2bc0a698b47df352982ef32e5b4af6dbf83f"
+    },
+    "passed_cases": 2,
+    "total_cases": 9,
+    "cases": [
+      {
+        "name": "ordinary_match",
+        "requested_engine": "python",
+        "actual_engine": "python",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 228,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": null
+      },
+      {
+        "name": "match_after_long_context",
+        "requested_engine": "python",
+        "actual_engine": "python",
+        "checks": {
+          "matching_line_visible": false,
+          "complete_source_lines_and_ranges": false,
+          "rendered_response_within_budget": false,
+          "originals_restore_exactly": true
+        },
+        "passed": false,
+        "response_chars": 690,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": null
+      },
+      {
+        "name": "older_match_after_oversized_receipt",
+        "requested_engine": "python",
+        "actual_engine": "python",
+        "checks": {
+          "matching_line_visible": false,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": false,
+        "response_chars": 34,
+        "response_budget": 512,
+        "hits": 0,
+        "coverage": null
+      },
+      {
+        "name": "whole_response_budget",
+        "requested_engine": "python",
+        "actual_engine": "python",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": false,
+          "originals_restore_exactly": true
+        },
+        "passed": false,
+        "response_chars": 1018,
+        "response_budget": 512,
+        "hits": 5,
+        "coverage": null
+      },
+      {
+        "name": "ordinary_match",
+        "requested_engine": "fts5",
+        "actual_engine": "fts5",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": true,
+        "response_chars": 228,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": null
+      },
+      {
+        "name": "match_after_long_context",
+        "requested_engine": "fts5",
+        "actual_engine": "fts5",
+        "checks": {
+          "matching_line_visible": false,
+          "complete_source_lines_and_ranges": false,
+          "rendered_response_within_budget": false,
+          "originals_restore_exactly": true
+        },
+        "passed": false,
+        "response_chars": 690,
+        "response_budget": 512,
+        "hits": 1,
+        "coverage": null
+      },
+      {
+        "name": "older_match_after_oversized_receipt",
+        "requested_engine": "fts5",
+        "actual_engine": "fts5",
+        "checks": {
+          "matching_line_visible": false,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": true,
+          "originals_restore_exactly": true
+        },
+        "passed": false,
+        "response_chars": 34,
+        "response_budget": 512,
+        "hits": 0,
+        "coverage": null
+      },
+      {
+        "name": "whole_response_budget",
+        "requested_engine": "fts5",
+        "actual_engine": "fts5",
+        "checks": {
+          "matching_line_visible": true,
+          "complete_source_lines_and_ranges": true,
+          "rendered_response_within_budget": false,
+          "originals_restore_exactly": true
+        },
+        "passed": false,
+        "response_chars": 1018,
+        "response_budget": 512,
+        "hits": 5,
+        "coverage": null
+      },
+      {
+        "name": "literal_restore_prioritizes_match",
+        "checks": {
+          "matching_line_visible": false,
+          "rendered_response_within_budget": true
+        },
+        "passed": false,
+        "response_chars": 359,
+        "response_budget": 512
+      }
+    ]
+  }
+}

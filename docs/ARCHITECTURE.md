@@ -11,10 +11,10 @@ Stop-Bullshiting's core is an offline Python application. There is no vendor API
 5. `mcp.py`: stdio JSON-RPC MCP entry point implementing `initialize`, `ping`, `tools/list` and `tools/call`.
 6. `usage.py`: read-only access to explicit token counters in local Claude Code/Codex log formats. A deliberately separate metric from SBS reduction.
 7. `cli.py`: subcommands, safe subprocess capture, banner launcher, diagnostics and benchmarks.
-8. `receipts.py`: exact numbered ranges and literal-query context from stored originals, with explicit omissions and a bounded response. No second compression pass is applied to selected lines.
+8. `receipts.py`: exact numbered ranges and literal-query context from stored originals, with explicit omissions and a bounded response. Both line and character budgets prioritize query matches before context; retained lines are displayed in source order. No second compression pass is applied to selected lines.
 9. `metrics.py`: optional tiktoken reference encodings, loaded only when requested. Counts both input and actual preview, keeping negative savings and labeling provider billing as unmeasured.
 10. `filters.py`: recognizes which program produced an output and applies its view. An unfamiliar format returns nothing rather than a guess.
-11. `search.py`: ranks passages across recent receipts with an in-memory index built for one query, using FTS5 or a Python BM25 fallback.
+11. `search.py`: ranks passages across recent receipts with an in-memory index built for one query, using FTS5 or a Python BM25 fallback. It selects complete matching lines within a global rendered-response budget, and reports index coverage and omitted passages. Oversized originals do not stop the scan of older receipts. The store loads one compressed original at a time and bounds decompression by the remaining UTF-8 input budget; it does not hold a read cursor across a yielded result.
 12. `repomap.py`: ranks files by how much other files use their names, using PageRank in plain Python, and prints a character-bounded outline. It is computed on demand and has no cache.
 
 ## Data lifecycle

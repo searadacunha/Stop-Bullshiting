@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.1 — 2026-11-04
+
+### Retrieval
+
+- Allocate space to matching lines before surrounding context in ranked receipt search and literal restoration; preserve complete source lines and accurate line ranges.
+- Bound the entire rendered `sbs find` response, including headings and notices. Add CLI `--max-chars` and the optional MCP `sbs_find.max_chars` argument; existing calls retain their defaults.
+- Report search coverage and passages omitted by the response budget. A matching line too large to show is identified for recovery instead of silently truncated.
+- Continue searching smaller, older originals when a recent receipt exceeds the UTF-8 input budget.
+- Read original blobs individually and bound decompression for search, without keeping a SQLite read cursor open while results are yielded.
+- Add targeted regression tests and a reproducible comparison script, `scripts/benchmark_retrieval_quality.py`.
+- Document the design comparison with RTK, context-mode, Aider, Repomix and Serena in [RETRIEVAL_QUALITY.md](docs/RETRIEVAL_QUALITY.md).
+- Pin the macOS installer to the reviewed 0.3.1 source commit.
+
 ## 0.3.0 — 2026-11-01
 
 ### Output

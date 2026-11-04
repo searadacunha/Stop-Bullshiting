@@ -34,7 +34,7 @@ Run the first command inside a Git repository. When output is reduced, copy the 
 |:--|:--|
 | **Selective output reduction** | Shortens eligible JSON, logs and text; protects recognized diagnostics and leaves detected code, diffs and CSV unchanged in auto mode |
 | **Command-aware views** | Understands `git status/log/diff/show`, pytest, unittest, jest, vitest, go and cargo tests, `rg` and `grep`: removes passing rows, hints, repeated paths and lockfile hunks, and keeps every commit, match and diagnostic |
-| **Targeted recovery** | Saves full originals locally; recover everything, exact line ranges, literal matches with context, or ranked passages across recent outputs |
+| **Targeted recovery** | Saves full originals locally; retrieve complete matching lines before surrounding context, with a total response budget and explicit search coverage |
 | **Agent hook adapters** | Opt-in Claude `PostToolUse` (Bash, Grep) and Codex `PreToolUse` adapters, tested against the real clients; see [what was verified](docs/INTEGRATIONS.md#verified-against-installed-clients) |
 | **Local MCP server** | Exposes receipt search, symbols, references, a repository map, exact lines, reversible compression and notes over stdio |
 | **Code navigation** | Definitions, name-based references, exact symbol source and a ranked repository outline for Python, JavaScript and TypeScript, without dependencies |
@@ -62,7 +62,7 @@ Run this from **any directory**. It downloads the [installer](scripts/install_ma
 )
 ```
 
-The installer installs or repairs **version 0.3.0**, pinned to commit `5208df7`, with the optional token counter in `~/.local/share/stop-bullshiting/venv`. No clone, Homebrew, `pipx` or `sudo` is needed. It adds the executable directory to your zsh `PATH`, backs up an existing shell configuration before changing it, and refreshes only SBS integrations you already enabled. It finishes by printing the version and running a benchmark with the built-in sample. Its first tokenizer use may download a public vocabulary table; benchmark text is not uploaded.
+The installer installs or repairs **version 0.3.1**, pinned to commit `67c65ee`, with the optional token counter in `~/.local/share/stop-bullshiting/venv`. No clone, Homebrew, `pipx` or `sudo` is needed. It adds the executable directory to your zsh `PATH`, backs up an existing shell configuration before changing it, and refreshes only SBS integrations you already enabled. It finishes by printing the version and running a benchmark with the built-in sample. Its first tokenizer use may download a public vocabulary table; benchmark text is not uploaded.
 
 Then open a **new terminal** before using `sbs`, Claude Code or Codex. If an existing Codex hook was refreshed, review it with `/hooks` inside Codex. Check the installation with:
 
@@ -71,7 +71,7 @@ sbs --version
 sbs bench --tokenizer o200k_base
 ```
 
-To update an older installation to 0.3.0 or repair this installation, rerun the same installer commands and open a new terminal. If you enabled the Claude or Codex hook, it is refreshed; review Codex hooks again with `/hooks`. This installer is pinned to 0.3.0; it does not promise a future latest version. `sbs` and `stop-bullshiting` are equivalent commands.
+To update an older installation to 0.3.1 or repair this installation, rerun the same installer commands and open a new terminal. If you enabled the Claude or Codex hook, it is refreshed; review Codex hooks again with `/hooks`. This installer is pinned to 0.3.1; it does not promise a future latest version. `sbs` and `stop-bullshiting` are equivalent commands.
 
 ### macOS (alternative: pipx)
 
@@ -119,6 +119,7 @@ To connect Claude Code or Codex, continue below only after the CLI is installed 
 | Recover selected lines | Append `--start 120 --end 145` to that restoration command | Exact numbered lines from the original |
 | Find inside an original | Append `--find "E_BALANCE" --context 3` to that restoration command | Literal matches and neighboring lines |
 | Search recent outputs | `sbs find "E_BALANCE ledger"` | Best-matching exact passages across stored originals |
+| Bound a search response | `sbs find "E_BALANCE" --max-chars 1200` | Complete matching lines within a total text budget, including headings and notices |
 | List symbols | `sbs map src --name compress` | Python, JavaScript and TypeScript names and line ranges |
 | Outline a repository | `sbs map . --ranked --budget 4000` | Most depended-on files and symbols within a character budget |
 | Find a definition | `sbs def save_receipt src` | Where a symbol is declared |
@@ -228,10 +229,15 @@ Search uses `rg` if available, with a Python fallback; both use case-sensitive l
 
 ```bash
 sbs find "E_BALANCE ledger"
+sbs find "E_BALANCE" --max-chars 1200
 sbs find "request-0055" --limit 3 --receipts 50 --json
 ```
 
-Results are exact passages with their original line numbers, best first. The index exists in memory for one query: no searchable copy of your tool output reaches the disk. SQLite FTS5 is used when your Python has it, with an equivalent Python ranking otherwise.
+Results contain complete source lines with their original line numbers, best first. Matching lines take priority over surrounding context. `--max-chars` bounds the entire text response, including headings and omission notices (default 6,000; minimum 256). If a ranked passage cannot include any complete matching line within the remaining budget, it is reported as omitted, with its receipt and line range available for recovery. Returned passages are selected excerpts, not an exhaustive list of matching lines.
+
+Search considers the most recent 200 receipts by default. Oversized originals are skipped without preventing smaller, older originals from being searched; coverage and omissions are reported. The index admits at most 64 MiB of uncompressed UTF-8 text per query. This is an input budget, not a bound on total Python or SQLite memory. `--json` includes structured coverage and omission metadata; the JSON envelope itself is not covered by `--max-chars`.
+
+The index exists in memory for one query: no searchable copy of your tool output reaches the disk. SQLite FTS5 is used when available, with a Python BM25 fallback; their tokenization and ranking can differ. See the [retrieval design and reproducible checks](docs/RETRIEVAL_QUALITY.md).
 
 ### Keep compact project notes
 
@@ -315,6 +321,8 @@ MCP tools: `sbs_compact`, `sbs_restore`, `sbs_find`, `sbs_symbols`, `sbs_definit
 
 `sbs_restore` accepts optional `start`, `end`, `query`, `context` and `limit` arguments. Agents can retrieve a diagnostic beyond the first 20,000 characters without resending the entire stored output.
 
+`sbs_find` accepts `query`, optional `limit` and optional `max_chars` (256–20,000). The character budget covers the returned text, including headings and notices. Both search and literal restoration allocate space to matching lines before context.
+
 ## Architecture
 
 ```mermaid
@@ -335,7 +343,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/INTEGRATIONS.md](docs/IN
 |:--|:--|
 | `sbs: command not found` | After the macOS installer, open a new terminal; its executable is `~/.local/share/stop-bullshiting/venv/bin/sbs`. For pipx, check `pipx list` and run `pipx ensurepath`; for a clone, use `.venv/bin/sbs`. |
 | `pipx: command not found` | Use the macOS installer above; it does not need pipx. Install pipx with Homebrew only if you choose the alternative method. |
-| `unrecognized arguments: --tokenizer` | Check `sbs --version` and `command -v sbs`: an older installation may be selected. Rerun the macOS installer to install or repair 0.3.0, then open a new terminal. |
+| `unrecognized arguments: --tokenizer` | Check `sbs --version` and `command -v sbs`: an older installation may be selected. Rerun the macOS installer to install or repair 0.3.1, then open a new terminal. |
 | `zsh: command not found: #` | Interactive zsh may treat pasted comments as commands. Copy only the command blocks; the explanations are outside them. |
 | A shell parse error or an unknown receipt ID | Do not paste angle-bracket placeholders or illustrative IDs. Copy the complete restoration command printed by your own SBS output. |
 | Editable installation reports that `.` is not installable | Run it from the root of the cloned repository containing `pyproject.toml`. The macOS installer works from any directory and needs no clone. |

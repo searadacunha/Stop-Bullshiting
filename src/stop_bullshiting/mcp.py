@@ -68,9 +68,10 @@ TOOLS = [
                        "description": "Neighboring lines around each match, clipped to the requested range."},
            "limit": {"type": "integer", "minimum": 1, "default": 50,
                      "description": "Maximum selected source lines to consider, including oversized lines."}}, ["receipt"]),
-    _tool("sbs_find", "Rank exact passages across recent stored originals for a few words, without restoring them whole.",
+    _tool("sbs_find", "Rank complete matching lines across recent originals. The text budget includes headings and notices; skipped originals and omitted passages are reported.",
           {"query": {"type": "string", "minLength": 1},
-           "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 5}}, ["query"]),
+           "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 5},
+           "max_chars": {"type": "integer", "minimum": 256, "maximum": 20000, "default": 6000}}, ["query"]),
     _tool("sbs_symbols", "Locate Python, JavaScript and TypeScript declarations with precise line ranges without reading entire files.",
           {"path": {"type": "string"}, "name": {"type": "string"}}, []),
     _tool("sbs_definition", "Find where a Python, JavaScript or TypeScript symbol is declared.",
@@ -118,9 +119,12 @@ def invoke(name: str, args: dict) -> dict:
             return _text(data)
         if name == "sbs_find":
             limit = args.get("limit", 5)
+            max_chars = args.get("max_chars", 6000)
             if type(limit) is not int or not 1 <= limit <= 20:
                 raise ValueError("limit must be an integer from 1 to 20")
-            return _text(render_receipts(find_receipts(args["query"], limit=limit)))
+            if type(max_chars) is not int or not 256 <= max_chars <= 20000:
+                raise ValueError("max_chars must be an integer from 256 to 20000")
+            return _text(render_receipts(find_receipts(args["query"], limit=limit, max_chars=max_chars)))
         if name == "sbs_definition":
             found = definitions(args["name"], _workspace_path(args.get("path", ".")))
             return _text("\n".join(f"{item['path']}:{item['line']}-{item['end']} {item['kind']} {item['name']}"
