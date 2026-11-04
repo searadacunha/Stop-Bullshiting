@@ -127,13 +127,56 @@ def get_receipt(identifier: str) -> str | None:
     return zlib.decompress(row[0]).decode("utf-8", "surrogatepass") if row else None
 
 
-def iter_receipts(limit: int):
-    """Yield (id, timestamp, source, text), newest first, one decompressed original at a time."""
+def _receipt_text(blob: bytes, max_bytes: int | None) -> tuple[str | None, int]:
+    """Decode one original, stopping once it cannot fit the optional byte budget."""
+    if max_bytes is None:
+        encoded = zlib.decompress(blob)
+    else:
+        decoder = zlib.decompressobj()
+        encoded = decoder.decompress(blob, max_bytes + 1)
+        if len(encoded) > max_bytes:
+            # This original was not searched: do not expand the rest just to
+            # validate it. Accepted originals still require a complete stream.
+            return None, 0
+        if not decoder.eof:
+            raise zlib.error("Incomplete or truncated receipt stream")
+    return encoded.decode("utf-8", "surrogatepass"), len(encoded)
+
+
+def iter_receipts(limit: int, *, max_bytes: int | None = None):
+    """Yield (id, timestamp, source, text), newest first, one original at a time.
+
+    With ``max_bytes``, accepted text shares a cumulative UTF-8 byte budget
+    (using surrogatepass, like storage). ``text=None`` marks an original that
+    cannot fit; it consumes no budget, so smaller, older originals can follow.
+    An excluded original is not fully read or validated. Without this optional
+    budget the original string is returned unchanged, as before.
+    """
+    if type(limit) is not int or limit < 0:
+        raise ValueError("limit must be a nonnegative integer")
+    if max_bytes is not None and (type(max_bytes) is not int or max_bytes < 0):
+        raise ValueError("max_bytes must be a nonnegative integer")
     with db() as con:
-        rows = con.execute("SELECT id, timestamp, source, original FROM receipts "
+        # Snapshot only small metadata, never all compressed BLOBs. Closing
+        # each read before yielding also lets other sessions write receipts.
+        rows = con.execute("SELECT id, timestamp, source, original_chars FROM receipts "
                            "ORDER BY timestamp DESC, rowid DESC LIMIT ?", (limit,)).fetchall()
-    for identifier, stamp, source, blob in rows:
-        yield identifier, stamp, source, zlib.decompress(blob).decode("utf-8", "surrogatepass")
+    remaining = max_bytes
+    for identifier, stamp, source, characters in rows:
+        # Every stored character needs at least one UTF-8 byte. This avoids
+        # loading even the compressed BLOB when it is already known not to fit.
+        if remaining is not None and characters > remaining:
+            yield identifier, stamp, source, None
+            continue
+        with db() as con:
+            row = con.execute("SELECT original FROM receipts WHERE id=?", (identifier,)).fetchone()
+        if row is None:
+            continue  # An explicitly configured purge may have removed it.
+        text, size = _receipt_text(row[0], remaining)
+        del row
+        if remaining is not None:
+            remaining -= size
+        yield identifier, stamp, source, text
 
 
 def count_event(source: str, outcome: str, original: int = 0, visible: int = 0, micros: int = 0) -> None:
