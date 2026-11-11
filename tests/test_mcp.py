@@ -21,6 +21,11 @@ class McpTests(unittest.TestCase):
         self.env.stop()
         self.temp.cleanup()
 
+    def test_non_string_method_gets_an_error_reply_instead_of_stopping_the_server(self):
+        reply = dispatch({"jsonrpc": "2.0", "id": 1, "method": 123})
+        self.assertEqual(reply["error"]["code"], -32601)
+        self.assertIsNone(dispatch({"jsonrpc": "2.0", "method": ["notifications/initialized"]}))
+
     def test_init_and_tools(self):
         reply = dispatch({"jsonrpc": "2.0", "id": 1, "method": "initialize",
                           "params": {"protocolVersion": "2025-03-26"}})
