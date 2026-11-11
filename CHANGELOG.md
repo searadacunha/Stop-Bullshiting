@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### MCP
+
+- A request whose `method` is not a string now gets an error reply. It used to raise outside the handler and stop the server.
+
 ## 0.3.1 — 2026-11-04
 
 ### Retrieval

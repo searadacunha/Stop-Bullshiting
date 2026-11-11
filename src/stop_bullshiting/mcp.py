@@ -164,7 +164,7 @@ def invoke(name: str, args: dict) -> dict:
 
 def dispatch(request: dict) -> dict | None:
     method = request.get("method")
-    if method and method.startswith("notifications/"):
+    if isinstance(method, str) and method.startswith("notifications/"):
         return None
     if "id" not in request:
         return None

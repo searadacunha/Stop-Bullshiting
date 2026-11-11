@@ -305,9 +305,13 @@ class CompressionTests(unittest.TestCase):
 
     def test_purge(self):
         original = "LOG\n" * 500
-        item = compress(original, max_len=600)
-        self.assertTrue(item.receipt)
-        self.assertEqual(purge(days=0), 0)  # strictly older, same second generally
+        # A frozen clock: with the real one, a second boundary between the two calls made this test fail.
+        with patch("stop_bullshiting.store.time.time", return_value=1_800_000_000.9):
+            item = compress(original, max_len=600)
+            self.assertTrue(item.receipt)
+            self.assertEqual(purge(days=0), 0)  # a receipt of the current second is not older
+        with patch("stop_bullshiting.store.time.time", return_value=1_800_000_001.0):
+            self.assertEqual(purge(days=0), 1)  # one second later it is
 
 
 if __name__ == "__main__":
