@@ -2,6 +2,8 @@
 
 # STOP-BULLSHITING
 
+<p align="center"><img src="assets/readme-hero.svg" width="100%" alt="STOP-BULLSHITING visual montage" /></p>
+
 **Smaller terminal output. Inspectable previews. Recoverable originals.**
 
 *A Python CLI for focused retrieval and smaller tool output. No mandatory runtime dependencies.*
